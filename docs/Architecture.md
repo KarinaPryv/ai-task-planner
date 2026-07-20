@@ -167,7 +167,7 @@ Error:   { error: { code: string, message: string, details?: unknown } }
 
 **`POST /api/brain-dump`**
 
-- Header: `Idempotency-Key` (обов'язковий, UUID, генерується клієнтом на початок Brain Dump-сесії)
+- Header: `Idempotency-Key` (обов'язковий, непорожній рядок, максимум 255 символів; типово UUID, згенерований клієнтом на початок Brain Dump-сесії, але API не обмежує формат конкретно UUID)
 - Body: `{ raw_text: string }`
 
 Логіка:
@@ -180,7 +180,7 @@ Error:   { error: { code: string, message: string, details?: unknown } }
         - `status = 'failed'` → атомарний `UPDATE ... WHERE status='failed'` для переходу в `processing`, продовжити виконання.
 2. Виклик Gemini з контекстом уже підтверджених задач дня → structured output → Zod-валідація (див. AI Integration).
     - Помилка/timeout/невалідна структура Gemini → `UPDATE idempotency_keys SET status='failed'` (не `completed`) → відповідна помилка (`422`/`429`/`502`/`503`). Тимчасові помилки ніколи не кешуються як успіх.
-3. Виклик RPC **`create_brain_dump_with_tasks(raw_text, tasks, idempotency_key, endpoint)`** — в одній транзакції: створює `brain_dump_entries`, створює всі `tasks` (`status=draft`), і переводить відповідний запис `idempotency_keys` у `completed` зі збереженням response body. Це закриває вікно між створенням задач і завершенням idempotency-запису — після commit не може залишитись ключ у `processing`.
+3. Виклик RPC **`create_brain_dump_with_tasks(raw_text, tasks, idempotency_key, endpoint)`** — в одній транзакції: створює `brain_dump_entries`, створює всі `tasks` (`status=draft`), **обчислює warnings**, і переводить відповідний запис `idempotency_keys` у `completed` зі збереженням повного response body (включно з warnings). Це закриває вікно між створенням задач і завершенням idempotency-запису — після commit не може залишитись ключ у `processing`, і не може існувати `completed`-запис без warnings у збереженій відповіді.
 4. Відповідь: `201 { data: { brainDumpEntry, tasks[], warnings: [...] } }`
 
 ### Tasks — редагування
@@ -438,11 +438,13 @@ Zod-схема є джерелом runtime-валідації (завжди). **
 ### Пост-обробка на бекенді (після успішної валідації, `tasks.length > 0`)
 
 1. Застосування дефолтів і `*_is_suggestion`-логіки (див. вище) для кожної задачі.
-2. Виклик **`create_brain_dump_with_tasks`** RPC — транзакційно створює `brain_dump_entries` + `tasks` (`status=draft`) із сервером обчисленим `sort_order` (timed хронологічно → untimed у порядку масиву відповіді), переводить `idempotency_keys` у `completed`.
-3. **Обчислення попереджень** (Route Handler, після RPC):
+2. Виклик **`create_brain_dump_with_tasks`** RPC — в одній транзакції: створює `brain_dump_entries` + `tasks` (`status=draft`) із сервером обчисленим `sort_order` (timed хронологічно → untimed у порядку масиву відповіді), **обчислює warnings** (правила нижче), і переводить `idempotency_keys` у `completed` зі збереженням повного `response_body` (включно з warnings).
+
+    Обчислення warnings навмисно виконується **всередині RPC**, а не в Route Handler після її виклику: створення задач, обчислення warnings і фіксація idempotency-запису мають завершуватись в одній транзакції, щоб гарантувати атомарність. Інакше можливий стан, коли `idempotency_keys.status = 'completed'`, але збережена відповідь не містить warnings (наприклад, при збої процесу між викликом RPC і окремим записом warnings) — а повторний запит з тим самим `Idempotency-Key` мусить завжди повертати ідентичну відповідь, включно з warnings (UX Specification §6.5: warnings обчислюються рівно один раз, у момент створення, і ніколи не перераховуються повторно).
+
     - Перевантаження дня: сума `duration_minutes` (підтверджені + нові draft) по кожній унікальній `scheduled_date` > 480 хв.
-    - Конфлікт часу: лише між парами задач, де обидві мають `scheduled_time`.
-4. Відповідь `201`: `{ data: { brainDumpEntry, tasks[], warnings: [...] } }`.
+    - Конфлікт часу: окремий warning для кожної пари задач з однаковою `scheduled_date`, де обидві мають `scheduled_time`, і їхні інтервали `[scheduled_time, scheduled_time + duration_minutes)` перетинаються.
+3. Відповідь `201`: `{ data: { brainDumpEntry, tasks[], warnings: [...] } }`.
 
 ## Authentication
 
