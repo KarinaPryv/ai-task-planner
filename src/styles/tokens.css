@@ -1,0 +1,34 @@
+/* Static design tokens (UI Specification §2) — values that do NOT depend on
+   time-of-day/surface. Dynamic (time-of-day/surface) tokens live in
+   time-of-day.css. Spacing is intentionally not tokenized here: the
+   spec confirms the standard Tailwind 4px scale is sufficient as-is. */
+
+@theme {
+  /* Border radius — role-based, not a single scale (§2 Border Radius) */
+  --radius-card: 18px; /* spec gives "orientovno 16-20px"; 18px chosen pending Figma card reference */
+  --radius-button: 999px; /* pill */
+  --radius-input: 16px; /* close to card, per "візуальна єдність форм" */
+  --radius-modal: 24px;
+  --radius-toast: 14px;
+  --radius-checkbox: 7px;
+
+  /* Glow-based elevation — exception-only (hover/drag card, modal). No
+     black drop-shadows anywhere in the system (§2 Elevation). */
+  --shadow-glow: 0 8px 28px rgba(180, 160, 255, 0.18), 0 0 0 1px rgba(255, 255, 255, 0.08);
+
+  /* Brand accent — fixed coral, identical across all 4 atmosphere states
+     (§2 Кольори — Brand Accent). Hover (+8% lighten, all variants) is
+     applied uniformly via a brightness filter in Button.tsx rather than
+     a second color token per accent color. */
+  --color-brand-accent: #ff6b47;
+
+  /* Destructive — fixed, same rationale as brand accent (§5 Button) */
+  --color-destructive: #e5484d;
+
+  /* Regular Input focus ring — brand-accent based, not surface-dependent
+     (§5 Input) */
+  --shadow-focus-ring: 0 0 0 3px rgba(255, 107, 71, 0.35);
+
+  --text-brand: clamp(1.1875rem, 1.05rem + 0.6vw, 1.5rem);
+  --text-body-sm: clamp(0.84375rem, 0.8rem + 0.2vw, 1rem);
+}

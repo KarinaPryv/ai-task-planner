@@ -1,0 +1,206 @@
+/* Dynamic tokens, driven by two attributes set on <html> by
+   components/theme (TimeOfDayProvider + the no-flash inline script):
+
+   - [data-time-theme]  "morning" | "day" | "evening" | "night"
+                         → atmosphere gradient stops ONLY.
+   - [data-surface]     "light" | "dark" — derived from data-time-theme
+                         (morning/day/evening → light, night → dark)
+                         → everything else that "sees through" the
+                         atmosphere: cards, inputs, secondary/ghost
+                         buttons, badges, drawer, modal, toast
+                         (UI Specification §5, "Light/Dark Surface
+                         Adaptivity").
+
+   Splitting these into two independent attributes (rather than 4 full
+   variable sets) is what lets morning/day/evening share one surface
+   definition instead of repeating it 3 times. */
+
+/* ---------- Atmosphere gradient stops (§2, confirmed shape via Figma
+   node 8:88: 4 stops at 0/22.5/45/100%, radial, focal point shifted
+   toward the upper area — not a plain centered 3-stop gradient). Day is
+   the exact Figma values; morning/evening/night reuse the same 4-stop
+   shape, with stop 2 derived as a color-mix between the spec's first two
+   control colors (spec only gives 3 control colors for those states —
+   see plan open question about adding dedicated Figma frames later). */
+
+[data-time-theme="morning"] {
+  --atmosphere-1: #e8c990;
+  --atmosphere-2: color-mix(in srgb, #e8c990 50%, #c9cbde 50%);
+  --atmosphere-3: #c9cbde;
+  --atmosphere-4: #9aa3c4;
+}
+
+[data-time-theme="day"] {
+  --atmosphere-1: #ffe9ae;
+  --atmosphere-2: #dfe5d2;
+  --atmosphere-3: #bee1f5;
+  --atmosphere-4: #7fc1ec;
+}
+
+[data-time-theme="evening"] {
+  --atmosphere-1: #c58b78;
+  --atmosphere-2: color-mix(in srgb, #c58b78 50%, #a0637f 50%);
+  --atmosphere-3: #a0637f;
+  --atmosphere-4: #6b4972;
+}
+
+[data-time-theme="night"] {
+  --atmosphere-1: #362655;
+  --atmosphere-2: color-mix(in srgb, #362655 75%, #1a1330 25%);
+  --atmosphere-3: color-mix(in srgb, #362655 40%, #1a1330 60%);
+  --atmosphere-4: #1a1330;
+}
+
+/* Shared gradient shape — same for all 4 states, only the stop colors
+   above change. Approximates the Figma focal point (~65% across, ~10%
+   down) using CSS percentage sizing rather than transplanting the
+   source SVG's px math, so it scales across viewport sizes. */
+.atmosphere-layer {
+  background-image: radial-gradient(
+    ellipse 150% 120% at 65% 10%,
+    var(--atmosphere-1) 0%,
+    var(--atmosphere-2) 22.5%,
+    var(--atmosphere-3) 45%,
+    var(--atmosphere-4) 100%
+  );
+}
+
+/* "Дихання" — barely-conscious motion, never a decorative flourish (§3
+   Motion Language). Respects prefers-reduced-motion: the background
+   stays a static frame instead (§3 Accessibility). */
+@keyframes atmosphere-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.94;
+  }
+  50% {
+    transform: scale(1.02);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .atmosphere-layer {
+    animation: atmosphere-breathe 14s ease-in-out infinite;
+  }
+}
+
+/* ---------- Surface-adaptive tokens (§5 Light/Dark Surface Adaptivity) */
+
+[data-surface="light"] {
+  --surface-text: #2a2438; /* confirmed via Figma node 8:103 ("Steel Gray") */
+  --surface-text-muted: rgba(42, 36, 56, 0.6); /* confirmed via Figma node 8:113 */
+  --surface-ghost-text: #2a2438; /* §5 Button Ghost: "темно-фіолетовий" */
+
+  --surface-card-bg: rgba(255, 255, 255, 0.4);
+  --surface-card-border: rgba(0, 0, 0, 0.06);
+
+  /* Slightly more opaque than card, for input text clarity (§5 Input) —
+     exact rgba not given in spec, derived from the card value above. */
+  --surface-input-bg: rgba(255, 255, 255, 0.55);
+  --surface-input-border: rgba(0, 0, 0, 0.06);
+
+  --surface-secondary-btn-bg: rgba(0, 0, 0, 0.06);
+  --surface-secondary-btn-border: rgba(0, 0, 0, 0.15);
+
+  --surface-drawer-bg: rgba(255, 255, 255, 0.88);
+  --surface-drawer-border: rgba(0, 0, 0, 0.06);
+
+  --surface-modal-bg: rgba(255, 255, 255, 0.88);
+  --surface-modal-border: rgba(0, 0, 0, 0.06);
+
+  --surface-toast-bg: rgba(255, 255, 255, 0.85);
+  --surface-toast-border: rgba(0, 0, 0, 0.06);
+  --surface-toast-undo-text: #e65a38;
+
+  --surface-checkbox-border: rgba(42, 36, 56, 0.35);
+
+  /* Semantic priority/AI-suggestion badges — light backing pair (§2) */
+  --badge-low-bg: #d3eedf;
+  --badge-low-fg: #1c7a4c;
+  --badge-medium-bg: #fcebcb;
+  --badge-medium-fg: #93590b;
+  --badge-high-bg: #fbdcdc;
+  --badge-high-fg: #b3272c;
+  --badge-ai-bg: #cdefe9;
+  --badge-ai-fg: #08756a;
+}
+
+[data-surface="dark"] {
+  --surface-text: #ffffff;
+  --surface-text-muted: rgba(255, 255, 255, 0.6);
+  --surface-ghost-text: #d9cffa; /* §5 Button Ghost: "світла лаванда" — exact hex not given, derived */
+
+  --surface-card-bg: rgba(255, 255, 255, 0.1);
+  --surface-card-border: rgba(255, 255, 255, 0.12);
+
+  --surface-input-bg: rgba(255, 255, 255, 0.14);
+  --surface-input-border: rgba(255, 255, 255, 0.12);
+
+  --surface-secondary-btn-bg: rgba(255, 255, 255, 0.1);
+  --surface-secondary-btn-border: rgba(255, 255, 255, 0.22);
+
+  --surface-drawer-bg: rgba(30, 20, 55, 0.9);
+  --surface-drawer-border: rgba(255, 255, 255, 0.1);
+
+  --surface-modal-bg: rgba(45, 32, 75, 0.85);
+  --surface-modal-border: rgba(255, 255, 255, 0.12);
+
+  --surface-toast-bg: rgba(255, 255, 255, 0.12);
+  --surface-toast-border: rgba(255, 255, 255, 0.15);
+  --surface-toast-undo-text: #ff9d7f;
+
+  --surface-checkbox-border: rgba(255, 255, 255, 0.35);
+
+  /* Semantic priority/AI-suggestion badges — dark backing pair (§2) */
+  --badge-low-bg: rgba(43, 182, 115, 0.22);
+  --badge-low-fg: #7ce8ae;
+  --badge-medium-bg: rgba(232, 163, 61, 0.22);
+  --badge-medium-fg: #ffcb80;
+  --badge-high-bg: rgba(229, 72, 77, 0.22);
+  --badge-high-fg: #ff9da0;
+  --badge-ai-bg: rgba(6, 182, 164, 0.24);
+  --badge-ai-fg: #6eebda;
+}
+
+/* ---------- Tailwind utility mapping (bg-surface-card, text-surface-text,
+   bg-badge-low, text-badge-low-fg, ...). "inline" keeps these as live
+   var() references so the [data-surface]/[data-time-theme] overrides
+   above keep working after Tailwind generates the utility classes —
+   same reasoning as --color-background in globals.css. */
+@theme inline {
+  --color-surface-text: var(--surface-text);
+  --color-surface-text-muted: var(--surface-text-muted);
+  --color-surface-ghost-text: var(--surface-ghost-text);
+
+  --color-surface-card: var(--surface-card-bg);
+  --color-surface-card-border: var(--surface-card-border);
+
+  --color-surface-input: var(--surface-input-bg);
+  --color-surface-input-border: var(--surface-input-border);
+
+  --color-surface-secondary-btn: var(--surface-secondary-btn-bg);
+  --color-surface-secondary-btn-border: var(--surface-secondary-btn-border);
+
+  --color-surface-drawer: var(--surface-drawer-bg);
+  --color-surface-drawer-border: var(--surface-drawer-border);
+
+  --color-surface-modal: var(--surface-modal-bg);
+  --color-surface-modal-border: var(--surface-modal-border);
+
+  --color-surface-toast: var(--surface-toast-bg);
+  --color-surface-toast-border: var(--surface-toast-border);
+  --color-surface-toast-undo: var(--surface-toast-undo-text);
+
+  --color-surface-checkbox-border: var(--surface-checkbox-border);
+
+  --color-badge-low: var(--badge-low-bg);
+  --color-badge-low-fg: var(--badge-low-fg);
+  --color-badge-medium: var(--badge-medium-bg);
+  --color-badge-medium-fg: var(--badge-medium-fg);
+  --color-badge-high: var(--badge-high-bg);
+  --color-badge-high-fg: var(--badge-high-fg);
+  --color-badge-ai: var(--badge-ai-bg);
+  --color-badge-ai-fg: var(--badge-ai-fg);
+}
