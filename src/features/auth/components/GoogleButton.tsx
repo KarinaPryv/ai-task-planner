@@ -38,7 +38,7 @@ export function GoogleButton({ onClick, disabled }: GoogleButtonProps) {
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="rounded-button inline-flex min-h-[48px] items-center justify-center gap-[10px] border border-black/10 bg-white px-[27px] py-[14px] font-body text-[14px] font-semibold text-[#3c4043] transition-transform active:scale-[0.97] disabled:opacity-40"
+      className="rounded-button inline-flex min-h-[48px] items-center justify-center gap-[10px] border border-black/10 bg-white px-[27px] py-[14px] font-body text-[14px] font-semibold text-[#3c4043] active:scale-[0.97] disabled:opacity-40"
     >
       <GoogleLogo />
       Увійти через Google

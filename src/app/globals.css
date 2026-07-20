@@ -11,3 +11,11 @@ body {
   color: var(--surface-text);
   font-family: var(--font-body), sans-serif;
 }
+
+/* Tailwind's preflight resets <button> to the browser default (arrow)
+   cursor, not pointer — apply pointer app-wide instead of repeating
+   cursor-pointer on every button/clickable component. */
+button:not(:disabled),
+[role="button"]:not(:disabled) {
+  cursor: pointer;
+}

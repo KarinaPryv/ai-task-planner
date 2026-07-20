@@ -106,6 +106,7 @@
 
   --surface-drawer-bg: rgba(255, 255, 255, 0.88);
   --surface-drawer-border: rgba(0, 0, 0, 0.06);
+  --surface-divider-bg: rgba(0, 0, 0, 0.08); /* Drawer footer divider — slightly stronger than drawer-border */
 
   --surface-modal-bg: rgba(255, 255, 255, 0.88);
   --surface-modal-border: rgba(0, 0, 0, 0.06);
@@ -143,6 +144,7 @@
 
   --surface-drawer-bg: rgba(30, 20, 55, 0.9);
   --surface-drawer-border: rgba(255, 255, 255, 0.1);
+  --surface-divider-bg: rgba(255, 255, 255, 0.1);
 
   --surface-modal-bg: rgba(45, 32, 75, 0.85);
   --surface-modal-border: rgba(255, 255, 255, 0.12);
@@ -185,6 +187,7 @@
 
   --color-surface-drawer: var(--surface-drawer-bg);
   --color-surface-drawer-border: var(--surface-drawer-border);
+  --color-surface-divider: var(--surface-divider-bg);
 
   --color-surface-modal: var(--surface-modal-bg);
   --color-surface-modal-border: var(--surface-modal-border);
