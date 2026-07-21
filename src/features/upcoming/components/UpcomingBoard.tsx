@@ -86,6 +86,15 @@ export function UpcomingBoard({ today, initialWeekStart, initialTasks }: Upcomin
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIndices, setActiveIndices] = useState<number[]>([0]);
 
+  // Mouse drag-to-scroll (desktop only — touch already scrolls natively,
+  // dragRef is only ever populated for mouse pointers). draggedRef
+  // survives from pointerup into the click that immediately follows it,
+  // so a drag that moved past the threshold can suppress that click
+  // (otherwise dragging across a task row would also "click" it).
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef<{ pointerId: number; startX: number; startScrollLeft: number } | null>(null);
+  const draggedRef = useRef(false);
+
   // §10.3: on a Monday the current week is already un-trimmed, so the
   // Overdue column is withheld even if older overdue tasks exist. A done
   // task is never "overdue" — it's just finished late — so this stays
@@ -112,16 +121,23 @@ export function UpcomingBoard({ today, initialWeekStart, initialTasks }: Upcomin
   const totalColumns = (showOverdue ? 1 : 0) + days.length;
   const currentWeekMonday = mondayOfIso(today);
 
-  // Reset scroll to the "today" column (or the first column for other
-  // weeks) whenever the displayed week actually changes — deliberately
-  // not tied to `tasks`, so an in-place edit within the current week
-  // never yanks the scroll position back. Wrapped in requestAnimationFrame
-  // because right after a week switch (including the very first mount)
-  // column widths/offsets aren't reliably settled yet in the same paint —
-  // without it, scrollTo can silently land on the wrong column and
-  // scroll-snap then locks it there.
+  // Reset scroll whenever the displayed week actually changes —
+  // deliberately not tied to `tasks`, so an in-place edit within the
+  // current week never yanks the scroll position back. Wrapped in
+  // requestAnimationFrame because right after a week switch (including
+  // the very first mount) column widths/offsets aren't reliably settled
+  // yet in the same paint — without it, scrollTo can silently land on
+  // the wrong column and scroll-snap then locks it there.
+  //
+  // Skipping past Overdue to land on "today" only makes sense on mobile,
+  // where exactly one column fills the screen — Overdue would otherwise
+  // hide today's column entirely on first view. On desktop several
+  // columns are visible at once, so Overdue and today are both already
+  // in frame from the start; jumping past it there just looks like the
+  // board randomly scrolled for no reason.
   useEffect(() => {
-    const targetIndex = showOverdue ? 1 : 0;
+    const isDesktop = window.matchMedia("(min-width: 1024px)").matches;
+    const targetIndex = !isDesktop && showOverdue ? 1 : 0;
 
     const frame = requestAnimationFrame(() => {
       const container = scrollRef.current;
@@ -131,7 +147,7 @@ export function UpcomingBoard({ today, initialWeekStart, initialTasks }: Upcomin
         container.scrollTo({ left: targetEl.offsetLeft, behavior: "auto" });
       }
 
-      setActiveIndices([targetIndex]);
+      setActiveIndices(container ? computeVisibleIndices(container) : [targetIndex]);
     });
 
     return () => cancelAnimationFrame(frame);
@@ -143,6 +159,55 @@ export function UpcomingBoard({ today, initialWeekStart, initialTasks }: Upcomin
     if (!container) return;
 
     setActiveIndices(computeVisibleIndices(container));
+  }
+
+  function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
+    if (event.pointerType !== "mouse" || event.button !== 0) return;
+    const container = scrollRef.current;
+    if (!container) return;
+
+    // Deliberately no setPointerCapture here yet — capturing on every
+    // plain click (even with zero movement) breaks the native click on
+    // nested <button> task rows in some browsers. Capture only kicks in
+    // once handlePointerMove confirms this is an actual drag.
+    dragRef.current = { pointerId: event.pointerId, startX: event.clientX, startScrollLeft: container.scrollLeft };
+    draggedRef.current = false;
+  }
+
+  function handlePointerMove(event: React.PointerEvent<HTMLDivElement>) {
+    const drag = dragRef.current;
+    const container = scrollRef.current;
+    if (!drag || !container || drag.pointerId !== event.pointerId) return;
+
+    const delta = event.clientX - drag.startX;
+
+    if (!draggedRef.current) {
+      if (Math.abs(delta) <= 3) return;
+      draggedRef.current = true;
+      container.setPointerCapture(event.pointerId);
+      setIsDragging(true);
+    }
+
+    container.scrollLeft = drag.startScrollLeft - delta;
+  }
+
+  function endDrag(event: React.PointerEvent<HTMLDivElement>) {
+    const container = scrollRef.current;
+    if (draggedRef.current && container?.hasPointerCapture(event.pointerId)) {
+      container.releasePointerCapture(event.pointerId);
+    }
+    dragRef.current = null;
+    setIsDragging(false);
+  }
+
+  // Capture-phase so this runs before a task row's own onClick — a drag
+  // that passed over a row shouldn't also register as a tap on it.
+  function handleClickCapture(event: React.MouseEvent<HTMLDivElement>) {
+    if (draggedRef.current) {
+      event.preventDefault();
+      event.stopPropagation();
+      draggedRef.current = false;
+    }
   }
 
   function handlePrevWeek() {
@@ -266,7 +331,7 @@ export function UpcomingBoard({ today, initialWeekStart, initialTasks }: Upcomin
         </button>
       </div>
 
-      <div className="border-surface-card-border bg-surface-card relative mx-4 mb-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-card border lg:mx-10">
+      <div className="border-surface-card-border bg-surface-card relative mx-4 mb-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-card border lg:mx-10 max-w-[1442px]">
         {isLoading && (
           <div className="bg-surface-card/70 absolute inset-0 z-10 flex items-center justify-center">
             <span className="border-brand-accent h-6 w-6 animate-spin rounded-full border-2 border-t-transparent" />
@@ -276,7 +341,15 @@ export function UpcomingBoard({ today, initialWeekStart, initialTasks }: Upcomin
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="flex min-h-0 min-w-0 flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+          onClickCapture={handleClickCapture}
+          className={[
+            "flex min-h-0 min-w-0 flex-1 overflow-x-auto overflow-y-hidden ",
+            isDragging ? "cursor-grabbing snap-none select-none" : "cursor-grab snap-x snap-mandatory",
+          ].join(" ")}
         >
           {showOverdue && (
             <DayColumn

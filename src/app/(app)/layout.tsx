@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Drawer } from "@/components/ui/Drawer";
 import { TopBar } from "@/components/ui/TopBar";
 import { PageBadgeProvider } from "@/components/ui/PageBadgeContext";
+import { useTimezoneSync } from "@/features/auth/hooks/useTimezoneSync";
 
 const COLLAPSE_STORAGE_KEY = "drawer-collapsed";
 
@@ -14,6 +15,8 @@ export default function AppLayout({
 }>) {
   const [isMobileOpen, setMobileOpen] = useState(false);
   const [isCollapsed, setCollapsed] = useState(false);
+
+  useTimezoneSync();
 
   // localStorage isn't available during SSR, so the value can only be
   // known after mount — both server and the initial client render must
