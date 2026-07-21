@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/update-session";
 
-const PROTECTED_PATHS = ["/", "/today", "/calendar", "/drafts", "/brain-dump"];
+const PROTECTED_PATHS = ["/", "/today", "/upcoming", "/drafts", "/brain-dump"];
 const AUTH_PATHS = ["/login", "/signup"];
 
 export async function proxy(request: NextRequest) {

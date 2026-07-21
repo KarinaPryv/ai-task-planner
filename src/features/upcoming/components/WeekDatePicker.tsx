@@ -6,29 +6,28 @@ import { Dropdown } from "@/components/ui/Dropdown";
 import { DAY_PICKER_CLASSNAMES, DayPickerChevron, DayPickerDayButton } from "@/components/ui/DayPickerKit";
 import { parseLocalDate, toLocalIsoDate } from "@/lib/date";
 
-interface DateFieldPickerProps {
-  value: string;
-  onChange: (isoDate: string) => void;
+interface WeekDatePickerProps {
+  today: string;
   disabled?: boolean;
+  onSelect: (isoDate: string) => void;
   trigger: (props: { toggle: () => void }) => React.ReactNode;
 }
 
-export function DateFieldPicker({ value, onChange, disabled, trigger }: DateFieldPickerProps) {
+// UX Specification §10.2 — jumps the board to the week containing the
+// picked date. Only today/future dates are selectable, mirroring the
+// disabled "week back" arrow on the current week.
+export function WeekDatePicker({ today, disabled, onSelect, trigger }: WeekDatePickerProps) {
   return (
-    <Dropdown
-      disabled={disabled}
-      panelClassName="w-[264px]"
-      trigger={({ toggle }) => trigger({ toggle })}
-    >
+    <Dropdown disabled={disabled} panelClassName="w-[264px]" trigger={({ toggle }) => trigger({ toggle })}>
       {({ close }) => (
         <DayPicker
           mode="single"
           locale={uk}
           weekStartsOn={1}
-          selected={parseLocalDate(value)}
+          disabled={{ before: parseLocalDate(today) }}
           onSelect={(date) => {
             if (!date) return;
-            onChange(toLocalIsoDate(date));
+            onSelect(toLocalIsoDate(date));
             close();
           }}
           components={{ DayButton: DayPickerDayButton, Chevron: DayPickerChevron }}
