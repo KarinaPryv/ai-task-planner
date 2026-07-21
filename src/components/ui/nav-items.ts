@@ -18,8 +18,8 @@ export interface NavItem {
 // the Figma-adjacent mockup provided for this component and gives an
 // explicit accessibility rationale for including Brain Dump.
 export const NAV_ITEMS: NavItem[] = [
-  { href: "/brain-dump", label: "Brain Dump", icon: Sparkle },
-  { href: "/today", label: "Today's Plan", icon: ListChecks },
-  { href: "/upcoming", label: "Upcoming", icon: CalendarDays },
-  { href: "/drafts", label: "Drafts", icon: Inbox },
+  { href: "/brain-dump", label: "Спонтанні думки", icon: Sparkle },
+  { href: "/today", label: "План на сьогодні", icon: ListChecks },
+  { href: "/upcoming", label: "Найближче", icon: CalendarDays },
+  { href: "/drafts", label: "Чернетки", icon: Inbox },
 ];

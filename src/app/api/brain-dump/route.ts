@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return apiError("UNAUTHORIZED", "Not authenticated.", 401);
+    return apiError("UNAUTHORIZED", "Необхідно увійти в систему.", 401);
   }
 
   const parsedKey = idempotencyKeySchema.safeParse(request.headers.get("Idempotency-Key"));
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
   if (!parsedKey.success) {
     return apiError(
       "VALIDATION_ERROR",
-      "Missing or invalid Idempotency-Key header.",
+      "Помилка запиту. Спробуй ще раз.",
       400,
       parsedKey.error.flatten(),
     );
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
   if (!parsedRequest.success) {
     return apiError(
       "VALIDATION_ERROR",
-      "Invalid request body.",
+      "Некоректні дані запиту.",
       400,
       parsedRequest.error.flatten(),
     );
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
 
   if (insertError) {
     if (insertError.code !== "23505") {
-      return apiError("INTERNAL_ERROR", "Failed to register request.", 500);
+      return apiError("INTERNAL_ERROR", "Не вдалося зареєструвати запит.", 500);
     }
 
     const { data: existing, error: fetchError } = await supabase
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
       .single();
 
     if (fetchError || !existing) {
-      return apiError("INTERNAL_ERROR", "Failed to look up existing request.", 500);
+      return apiError("INTERNAL_ERROR", "Не вдалося перевірити попередній запит.", 500);
     }
 
     if (existing.status === "completed") {
@@ -80,7 +80,7 @@ export async function POST(request: Request) {
     if (existing.status === "processing") {
       return apiError(
         "REQUEST_IN_PROGRESS",
-        "An identical request is already being processed.",
+        "Такий запит вже обробляється.",
         409,
       );
     }
@@ -97,13 +97,13 @@ export async function POST(request: Request) {
       .select("key");
 
     if (reclaimError) {
-      return apiError("INTERNAL_ERROR", "Failed to reclaim request.", 500);
+      return apiError("INTERNAL_ERROR", "Не вдалося повторити запит.", 500);
     }
 
     if (!reclaimed || reclaimed.length === 0) {
       return apiError(
         "REQUEST_IN_PROGRESS",
-        "An identical request is already being processed.",
+        "Такий запит вже обробляється.",
         409,
       );
     }
@@ -126,18 +126,18 @@ export async function POST(request: Request) {
     await markFailed();
 
     if (error instanceof GeminiRateLimitError) {
-      return apiError("AI_RATE_LIMITED", "Gemini rate limit exceeded.", 429);
+      return apiError("AI_RATE_LIMITED", "Забагато запитів. Спробуй трохи пізніше.", 429);
     }
 
     if (error instanceof GeminiUnavailableError) {
-      return apiError("AI_UNAVAILABLE", "AI provider is unavailable. Try again.", 503);
+      return apiError("AI_UNAVAILABLE", "AI-сервіс тимчасово недоступний. Спробуй ще раз.", 503);
     }
 
     if (error instanceof GeminiProviderError) {
-      return apiError("AI_PROVIDER_ERROR", "AI provider returned an error.", 502);
+      return apiError("AI_PROVIDER_ERROR", "AI-сервіс повернув помилку.", 502);
     }
 
-    return apiError("INTERNAL_ERROR", "Unexpected error calling the AI provider.", 500);
+    return apiError("INTERNAL_ERROR", "Непередбачена помилка під час звернення до AI.", 500);
   }
 
   let parsedJson: unknown;
@@ -145,7 +145,7 @@ export async function POST(request: Request) {
     parsedJson = JSON.parse(rawResponseText);
   } catch {
     await markFailed();
-    return apiError("AI_INVALID_RESPONSE", "AI returned a non-JSON response.", 502);
+    return apiError("AI_INVALID_RESPONSE", "AI повернув некоректну відповідь.", 502);
   }
 
   const parsedAiResponse = aiResponseSchema.safeParse(parsedJson);
@@ -154,7 +154,7 @@ export async function POST(request: Request) {
     await markFailed();
     return apiError(
       "AI_INVALID_RESPONSE",
-      "AI response did not match the expected schema.",
+      "AI повернув відповідь у неочікуваному форматі.",
       502,
     );
   }
@@ -163,7 +163,7 @@ export async function POST(request: Request) {
     await markFailed();
     return apiError(
       "AI_COULD_NOT_PARSE_TASKS",
-      parsedAiResponse.data.no_tasks_reason ?? "No tasks found.",
+      parsedAiResponse.data.no_tasks_reason ?? "Не вдалося розпізнати жодної задачі.",
       422,
     );
   }
@@ -192,7 +192,7 @@ export async function POST(request: Request) {
 
   if (rpcError) {
     await markFailed();
-    return apiError("INTERNAL_ERROR", "Failed to save brain dump.", 500);
+    return apiError("INTERNAL_ERROR", "Не вдалося зберегти запис.", 500);
   }
 
   return apiSuccess(rpcResult, 201);
