@@ -58,7 +58,7 @@ export function DateFieldPicker({ value, onChange, disabled, trigger }: DateFiel
   return (
     <Dropdown
       disabled={disabled}
-      panelClassName="w-[264px] p-2"
+      panelClassName="w-[264px]"
       trigger={({ toggle }) => trigger({ toggle })}
     >
       {({ close }) => (

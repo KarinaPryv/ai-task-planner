@@ -22,7 +22,7 @@ export function TimeFieldPicker({ value, onChange, disabled, trigger }: TimeFiel
   return (
     <Dropdown
       disabled={disabled}
-      panelClassName="w-[110px] max-h-[220px] overflow-y-auto"
+      panelClassName="w-[110px] max-h-[220px]"
       trigger={({ toggle }) => trigger({ toggle })}
     >
       {({ close }) => (

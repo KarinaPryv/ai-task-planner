@@ -2,16 +2,17 @@
 
 import { useState, type FocusEvent } from "react";
 import { motion } from "framer-motion";
-import { AlertTriangle, Calendar, Check, Clock, Trash2 } from "lucide-react";
+import { AlertTriangle, Calendar, Check, Clock, Timer, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { useConfirmTask } from "@/features/tasks/hooks/useConfirmTask";
 import { useDeleteTask } from "@/features/tasks/hooks/useDeleteTask";
 import { useUpdateTask } from "@/features/tasks/hooks/useUpdateTask";
 import type { Task } from "@/features/tasks/types";
-import { formatDateGroupLabel } from "@/features/brain-dump/lib/format-date";
+import { formatDateGroupLabel, formatDuration } from "@/features/brain-dump/lib/format-date";
 import { PriorityPicker } from "./PriorityPicker";
 import { DateFieldPicker } from "./DateFieldPicker";
 import { TimeFieldPicker } from "./TimeFieldPicker";
+import { DurationPicker } from "./DurationPicker";
 
 interface TaskCardProps {
   task: Task;
@@ -59,10 +60,6 @@ export function TaskCard({
   const [descriptionDraft, setDescriptionDraft] = useState(
     task.description ?? "",
   );
-  const [durationDraft, setDurationDraft] = useState(
-    String(task.duration_minutes),
-  );
-
   const isBusy = confirmMutation.isPending || deleteMutation.isPending;
 
   function handleConfirm() {
@@ -102,28 +99,6 @@ export function TaskCard({
       {
         onSuccess: (updated) => onUpdated(task.id, updated),
         onError: () => setDescriptionDraft(task.description ?? ""),
-      },
-    );
-  }
-
-  function handleDurationBlur(event: FocusEvent<HTMLInputElement>) {
-    const parsed = Number.parseInt(event.target.value, 10);
-
-    if (!Number.isFinite(parsed) || parsed <= 0) {
-      setDurationDraft(String(task.duration_minutes));
-      return;
-    }
-
-    if (parsed === task.duration_minutes) {
-      setDurationDraft(String(parsed));
-      return;
-    }
-
-    updateMutation.mutate(
-      { taskId: task.id, patch: { duration_minutes: parsed } },
-      {
-        onSuccess: (updated) => onUpdated(task.id, updated),
-        onError: () => setDurationDraft(String(task.duration_minutes)),
       },
     );
   }
@@ -174,6 +149,29 @@ export function TaskCard({
     updateMutation.mutate(
       { taskId: task.id, patch: { scheduled_time: nextTime } },
       { onError: () => onUpdated(task.id, { scheduled_time: previousTime }) },
+    );
+  }
+
+  function handleDurationChange(nextDuration: number) {
+    if (nextDuration === task.duration_minutes) return;
+
+    const previousDuration = task.duration_minutes;
+    const previousIsSuggestion = task.duration_is_suggestion;
+
+    onUpdated(task.id, {
+      duration_minutes: nextDuration,
+      duration_is_suggestion: false,
+    });
+
+    updateMutation.mutate(
+      { taskId: task.id, patch: { duration_minutes: nextDuration } },
+      {
+        onError: () =>
+          onUpdated(task.id, {
+            duration_minutes: previousDuration,
+            duration_is_suggestion: previousIsSuggestion,
+          }),
+      },
     );
   }
 
@@ -269,18 +267,22 @@ export function TaskCard({
               )}
             />
 
-            <span className="inline-flex items-center gap-1">
-              <input
-                type="number"
-                min={1}
-                value={durationDraft}
-                onChange={(event) => setDurationDraft(event.target.value)}
-                onBlur={handleDurationBlur}
-                disabled={isBusy}
-                className="w-8 border-b border-transparent bg-transparent text-right outline-none focus:border-current disabled:opacity-60"
-              />
-              <span>хв</span>
-            </span>
+            <DurationPicker
+              value={task.duration_minutes}
+              onChange={handleDurationChange}
+              disabled={isBusy}
+              trigger={({ toggle }) => (
+                <button
+                  type="button"
+                  onClick={toggle}
+                  disabled={isBusy}
+                  className="hover:text-surface-text inline-flex items-center gap-1 disabled:opacity-60"
+                >
+                  <Timer size={13} />
+                  {formatDuration(task.duration_minutes)}
+                </button>
+              )}
+            />
           </div>
 
           {conflictWithTitle && (

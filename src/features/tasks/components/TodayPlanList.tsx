@@ -1,22 +1,18 @@
 "use client";
 
 import { useState, type PointerEvent as ReactPointerEvent } from "react";
-import { Reorder, useDragControls } from "framer-motion";
+import { AnimatePresence, Reorder, useDragControls } from "framer-motion";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useCompleteTask } from "@/features/tasks/hooks/useCompleteTask";
 import { useReopenTask } from "@/features/tasks/hooks/useReopenTask";
 import { useReorderTasks } from "@/features/tasks/hooks/useReorderTasks";
 import type { Task } from "@/features/tasks/types";
 import { TaskRow } from "./TaskRow";
+import { TaskDetailModal } from "./TaskDetailModal";
 
 interface TodayPlanListProps {
   initialTasks: Task[];
   todayDate: string;
-  // Stub for now — a later increment wires this to a Task Detail modal
-  // (UX Specification §6.1). Optional (defaults to a no-op) because the
-  // Server Component page can't pass a function prop across the RSC
-  // boundary.
-  onTaskClick?: (task: Task) => void;
 }
 
 function byLowestSortOrderFirst(a: Task, b: Task): number {
@@ -27,11 +23,13 @@ function byLowestSortOrderFirst(a: Task, b: Task): number {
 // separate groups, and only the active zone is draggable. Reordering uses
 // framer-motion's Reorder (already a project dependency) for touch-friendly
 // drag&drop with no new package.
-export function TodayPlanList({ initialTasks, todayDate, onTaskClick = () => {} }: TodayPlanListProps) {
+export function TodayPlanList({ initialTasks, todayDate }: TodayPlanListProps) {
   const [tasks, setTasks] = useState(initialTasks);
   const completeTask = useCompleteTask();
   const reopenTask = useReopenTask();
   const reorderTasks = useReorderTasks();
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const selectedTask = tasks.find((task) => task.id === selectedTaskId) ?? null;
 
   const activeTasks = tasks.filter((task) => task.status === "confirmed").sort(byLowestSortOrderFirst);
   const doneTasks = tasks.filter((task) => task.status === "done").sort(byLowestSortOrderFirst);
@@ -68,49 +66,75 @@ export function TodayPlanList({ initialTasks, todayDate, onTaskClick = () => {} 
     );
   }
 
+  function handleTaskUpdated(patch: Partial<Task>) {
+    if (!selectedTaskId) return;
+    setTasks((prev) => prev.map((task) => (task.id === selectedTaskId ? { ...task, ...patch } : task)));
+  }
+
+  function handleTaskDeleted() {
+    if (!selectedTaskId) return;
+    setTasks((prev) => prev.filter((task) => task.id !== selectedTaskId));
+    setSelectedTaskId(null);
+  }
+
   if (tasks.length === 0) {
     return <EmptyState message="Тут з'явиться твій план на сьогодні — почни з Brain Dump" />;
   }
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 pt-4 lg:mx-auto lg:w-full lg:max-w-[620px] lg:px-0 lg:pt-6">
-      {activeTasks.length === 0 ? (
-        <p className="font-body text-surface-text-muted py-3 text-center text-[13px] opacity-60">
-          Усі задачі на сьогодні виконані
-        </p>
-      ) : (
-        <div className="border-surface-card-border bg-surface-card rounded-card border px-3">
-          <Reorder.Group as="div" axis="y" values={activeTasks} onReorder={handleReorder}>
-            {activeTasks.map((task, index) => (
-              <DraggableTaskRow
-                key={task.id}
-                task={task}
-                isLast={index === activeTasks.length - 1}
-                onToggle={() => handleToggle(task)}
-                onClick={() => onTaskClick(task)}
-              />
-            ))}
-          </Reorder.Group>
-        </div>
-      )}
-
-      {doneTasks.length > 0 && (
-        <>
-          <SectionDivider label="Виконано" />
+    <>
+      <div className="flex-1 overflow-y-auto px-4 pt-4 lg:mx-auto lg:w-full lg:max-w-[620px] lg:px-0 lg:pt-6">
+        {activeTasks.length === 0 ? (
+          <p className="font-body text-surface-text-muted py-3 text-center text-[13px] opacity-60">
+            Усі задачі на сьогодні виконані
+          </p>
+        ) : (
           <div className="border-surface-card-border bg-surface-card rounded-card border px-3">
-            {doneTasks.map((task, index) => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                isLast={index === doneTasks.length - 1}
-                onToggle={() => handleToggle(task)}
-                onClick={() => onTaskClick(task)}
-              />
-            ))}
+            <Reorder.Group as="div" axis="y" values={activeTasks} onReorder={handleReorder}>
+              {activeTasks.map((task, index) => (
+                <DraggableTaskRow
+                  key={task.id}
+                  task={task}
+                  isLast={index === activeTasks.length - 1}
+                  onToggle={() => handleToggle(task)}
+                  onClick={() => setSelectedTaskId(task.id)}
+                />
+              ))}
+            </Reorder.Group>
           </div>
-        </>
-      )}
-    </div>
+        )}
+
+        {doneTasks.length > 0 && (
+          <>
+            <SectionDivider label="Виконано" />
+            <div className="border-surface-card-border bg-surface-card rounded-card border px-3">
+              {doneTasks.map((task, index) => (
+                <TaskRow
+                  key={task.id}
+                  task={task}
+                  isLast={index === doneTasks.length - 1}
+                  onToggle={() => handleToggle(task)}
+                  onClick={() => setSelectedTaskId(task.id)}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      <AnimatePresence>
+        {selectedTask && (
+          <TaskDetailModal
+            key={selectedTask.id}
+            task={selectedTask}
+            onClose={() => setSelectedTaskId(null)}
+            onToggle={() => handleToggle(selectedTask)}
+            onUpdated={handleTaskUpdated}
+            onDeleted={handleTaskDeleted}
+          />
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
