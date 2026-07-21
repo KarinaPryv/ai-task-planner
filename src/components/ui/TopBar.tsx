@@ -30,7 +30,7 @@ export function TopBar({ isMobileOpen, onToggleMobile }: TopBarProps) {
       >
         {isMobileOpen ? <X size={22} /> : <Menu size={22} />}
       </button>
-      <span className="font-body text-sm font-semibold">{title}</span>
+      <span className="font-body text-m font-semibold">{title}</span>
     </header>
   );
 }

@@ -10,6 +10,7 @@
   --radius-input: 16px; /* close to card, per "візуальна єдність форм" */
   --radius-modal: 24px;
   --radius-toast: 14px;
+  --radius-dropdown: 14px; /* trigger-anchored option panel (priority/date/time pickers) */
   --radius-checkbox: 7px;
 
   /* Glow-based elevation — exception-only (hover/drag card, modal). No

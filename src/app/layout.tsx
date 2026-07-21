@@ -4,6 +4,7 @@ import "./globals.css";
 import { AtmosphereBackground } from "@/components/theme/AtmosphereBackground";
 import { TimeOfDayProvider } from "@/components/theme/TimeOfDayProvider";
 import { themeScript } from "@/components/theme/theme-script";
+import { QueryProvider } from "@/components/providers/query-provider";
 
 // UI Specification §2 Типографіка: Comfortaa is the accent typeface
 // (buttons, badges, wordmark, FAB — never card titles/body text);
@@ -46,11 +47,13 @@ export default function RootLayout({
             so it's a raw script, not a React effect (see theme-script.ts). */}
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="flex min-h-full flex-col">
-        <TimeOfDayProvider>
-          <AtmosphereBackground />
-          {children}
-        </TimeOfDayProvider>
+      <body className="flex h-full flex-col overflow-hidden">
+        <QueryProvider>
+          <TimeOfDayProvider>
+            <AtmosphereBackground />
+            {children}
+          </TimeOfDayProvider>
+        </QueryProvider>
       </body>
     </html>
   );

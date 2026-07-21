@@ -1,41 +1,28 @@
 "use client";
 
 import { useState } from "react";
+import { BrainDumpComposer } from "@/features/brain-dump/components/BrainDumpComposer";
+import { DraftReviewList } from "@/features/brain-dump/components/DraftReviewList";
+import { EmptyState } from "@/features/brain-dump/components/EmptyState";
+import { useDraftReview } from "@/features/brain-dump/hooks/useDraftReview";
+import { useDraftText } from "@/features/brain-dump/hooks/useDraftText";
+import type { BrainDumpResponse } from "@/features/brain-dump/types";
 
-interface BrainDumpTask {
-  id: string;
-  title: string;
-  description: string | null;
-  priority: "low" | "medium" | "high";
-  priority_is_suggestion: boolean;
-  duration_minutes: number;
-  duration_is_suggestion: boolean;
-  scheduled_date: string;
-  scheduled_time: string | null;
-  status: "draft" | "confirmed" | "done";
-  sort_order: number;
-}
-
-interface BrainDumpResult {
-  brainDumpEntry: { id: string; raw_text: string; created_at: string };
-  tasks: BrainDumpTask[];
-  warnings: unknown[];
-}
-
-// Increment 8 test harness: Confirm/Edit/Delete/Confirm remaining buttons
-// exercise the new endpoints against the tasks created by the smoke-test
-// submit below. No real design yet — that arrives with the actual
-// Brain Dump / Review UI in a later increment.
+// AI Processing (full-screen loading) is a separate, not-yet-designed
+// state — this still just flips between "idle" and "loading" locally.
 export default function BrainDumpPage() {
-  const [rawText, setRawText] = useState("");
+  const { text: rawText, setText: setRawText, clearDraft } = useDraftText();
+  const { batches, addBatch, removeTasks, updateTask } = useDraftReview();
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [result, setResult] = useState<BrainDumpResult | null>(null);
 
   async function handleSubmit() {
+    if (!rawText.trim() || status === "loading") {
+      return;
+    }
+
     setStatus("loading");
     setErrorMessage(null);
-    setResult(null);
 
     const idempotencyKey = crypto.randomUUID();
 
@@ -57,7 +44,9 @@ export default function BrainDumpPage() {
         return;
       }
 
-      setResult(body.data);
+      addBatch(body.data as BrainDumpResponse);
+      clearDraft();
+      setRawText("");
       setStatus("idle");
     } catch {
       setErrorMessage("Не вдалося зв'язатися з сервером.");
@@ -65,155 +54,28 @@ export default function BrainDumpPage() {
     }
   }
 
-  function patchTaskLocally(id: string, patch: Partial<BrainDumpTask>) {
-    setResult((prev) =>
-      prev
-        ? { ...prev, tasks: prev.tasks.map((task) => (task.id === id ? { ...task, ...patch } : task)) }
-        : prev,
-    );
-  }
-
-  function removeTaskLocally(id: string) {
-    setResult((prev) => (prev ? { ...prev, tasks: prev.tasks.filter((task) => task.id !== id) } : prev));
-  }
-
-  async function handleConfirm(id: string) {
-    const response = await fetch(`/api/tasks/${id}/confirm`, { method: "POST" });
-    const body = await response.json();
-
-    if (!response.ok) {
-      window.alert(body?.error?.message ?? "Не вдалося підтвердити задачу.");
-      return;
-    }
-
-    patchTaskLocally(id, { status: "confirmed" });
-  }
-
-  async function handleEdit(id: string, currentTitle: string) {
-    const newTitle = window.prompt("Нова назва задачі:", currentTitle);
-
-    if (newTitle === null || newTitle.trim() === "" || newTitle === currentTitle) {
-      return;
-    }
-
-    const response = await fetch(`/api/tasks/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: newTitle.trim() }),
-    });
-
-    const body = await response.json();
-
-    if (!response.ok) {
-      window.alert(body?.error?.message ?? "Не вдалося оновити задачу.");
-      return;
-    }
-
-    patchTaskLocally(id, { title: body.data.title });
-  }
-
-  async function handleDelete(id: string) {
-    if (!window.confirm("Видалити задачу?")) {
-      return;
-    }
-
-    const response = await fetch(`/api/tasks/${id}`, { method: "DELETE" });
-
-    if (!response.ok) {
-      const body = await response.json();
-      window.alert(body?.error?.message ?? "Не вдалося видалити задачу.");
-      return;
-    }
-
-    removeTaskLocally(id);
-  }
-
-  async function handleConfirmRemaining() {
-    if (!result) return;
-
-    const response = await fetch(
-      `/api/brain-dump/${result.brainDumpEntry.id}/confirm-remaining`,
-      { method: "POST" },
-    );
-
-    const body = await response.json();
-
-    if (!response.ok) {
-      window.alert(body?.error?.message ?? "Не вдалося підтвердити задачі.");
-      return;
-    }
-
-    const confirmedIds: string[] = body.data.confirmed;
-    setResult((prev) =>
-      prev
-        ? {
-            ...prev,
-            tasks: prev.tasks.map((task) =>
-              confirmedIds.includes(task.id) ? { ...task, status: "confirmed" } : task,
-            ),
-          }
-        : prev,
-    );
-  }
-
   return (
-    <main className="flex flex-1 flex-col gap-4 p-8">
-      <h1 className="text-2xl font-semibold">Brain Dump</h1>
-
-      <textarea
-        value={rawText}
-        onChange={(e) => setRawText(e.target.value)}
-        rows={6}
-        className="w-full max-w-xl border p-2"
-      />
-
-      <button
-        type="button"
-        onClick={handleSubmit}
-        disabled={rawText.trim().length === 0 || status === "loading"}
-        className="w-fit rounded-md border px-4 py-2"
-      >
-        {status === "loading" ? "Обробка..." : "Далі"}
-      </button>
-
-      {status === "error" && <p>{errorMessage}</p>}
-
-      {result && (
-        <div className="flex flex-col gap-3">
-          <button
-            type="button"
-            onClick={handleConfirmRemaining}
-            className="w-fit rounded-md border px-4 py-2"
-          >
-            Confirm remaining
-          </button>
-
-          <ul className="flex flex-col gap-2">
-            {result.tasks.map((task) => (
-              <li key={task.id} className="flex items-center gap-3 border p-2">
-                <span className="flex-1">
-                  [{task.status}] {task.title} ({task.duration_minutes} хв, {task.priority})
-                </span>
-                <button type="button" onClick={() => handleConfirm(task.id)} className="border px-2 py-1">
-                  Confirm
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleEdit(task.id, task.title)}
-                  className="border px-2 py-1"
-                >
-                  Edit
-                </button>
-                <button type="button" onClick={() => handleDelete(task.id)} className="border px-2 py-1">
-                  Delete
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
+    <main className="flex min-h-0 flex-1 flex-col">
+      {batches.length > 0 ? (
+        <DraftReviewList
+          batches={batches}
+          onTasksConfirmedOrDeleted={removeTasks}
+          onTaskUpdated={updateTask}
+        />
+      ) : (
+        <EmptyState message="Тут з'являться твої чернетки задач після обробки" />
       )}
 
-      {result !== null && <pre>{JSON.stringify(result, null, 2)}</pre>}
+      {status === "error" && errorMessage && (
+        <p className="text-destructive font-body px-4 pb-2 text-sm lg:px-10">{errorMessage}</p>
+      )}
+
+      <BrainDumpComposer
+        value={rawText}
+        onChange={setRawText}
+        onSubmit={handleSubmit}
+        loading={status === "loading"}
+      />
     </main>
   );
 }

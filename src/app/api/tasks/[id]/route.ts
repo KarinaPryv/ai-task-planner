@@ -50,11 +50,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return apiError("TASK_READ_ONLY", "Cannot edit a completed task.", 403);
   }
 
-  const { title, description, priority, duration_minutes } = parsedBody.data;
+  const { title, description, priority, duration_minutes, scheduled_date, scheduled_time } =
+    parsedBody.data;
   const updatePayload: Record<string, unknown> = {};
 
   if (title !== undefined) updatePayload.title = title;
   if (description !== undefined) updatePayload.description = description;
+  if (scheduled_date !== undefined) updatePayload.scheduled_date = scheduled_date;
+  if (scheduled_time !== undefined) updatePayload.scheduled_time = scheduled_time;
 
   if (priority !== undefined) {
     updatePayload.priority = priority;
