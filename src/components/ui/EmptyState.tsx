@@ -5,7 +5,7 @@ interface EmptyStateProps {
 // UI Specification §4 Imagery/Empty States calls for an abstract particle
 // motif here (shared with the AI Processing animation) — deferred until
 // that system actually exists. For now this matches the provided mockup
-// exactly: text only.
+// exactly: text only. Shared across features (Brain Dump, Today's Plan).
 export function EmptyState({ message }: EmptyStateProps) {
   return (
     <div className="flex flex-1 items-center justify-center p-5 text-center">

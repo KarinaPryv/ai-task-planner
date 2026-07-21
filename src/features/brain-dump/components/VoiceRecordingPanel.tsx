@@ -42,7 +42,7 @@ export function VoiceRecordingPanel({
   const isProcessing = status === "processing";
 
   return (
-    <div>
+    <div className="flex items-center justify-between">
       <div className="flex items-center gap-3">
         <div className="text-surface-toast-undo font-accent flex shrink-0 items-center gap-1.5 text-[13px] font-bold">
           <span className="bg-brand-accent h-[7px] w-[7px] animate-pulse rounded-full" />
@@ -76,7 +76,7 @@ export function VoiceRecordingPanel({
         )}
       </div>
 
-      <div className="mt-3.5 flex items-center justify-end gap-2">
+      <div className="flex items-center justify-end gap-2">
         <button
           type="button"
           onClick={onCancel}

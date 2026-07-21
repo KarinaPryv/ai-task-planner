@@ -28,3 +28,20 @@ export const confirmBatchSchema = z.object({
 });
 
 export type ConfirmBatchInput = z.infer<typeof confirmBatchSchema>;
+
+// PATCH /api/tasks/reorder body (Architecture.md §Reorder) — drag&drop on
+// Today's Plan, active (confirmed) zone only.
+export const reorderTasksSchema = z.object({
+  target_date: z.iso.date(),
+  items: z
+    .array(
+      z.object({
+        id: z.uuid(),
+        sort_order: z.number().int().nonnegative(),
+      }),
+    )
+    .min(1)
+    .max(200),
+});
+
+export type ReorderTasksInput = z.infer<typeof reorderTasksSchema>;

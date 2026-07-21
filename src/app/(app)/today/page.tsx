@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import LogoutButton from "./logout-button";
+import { getTodayInTimezone } from "@/lib/timezone";
+import { getTodayTasks } from "@/features/tasks/api/queries";
+import { TodayPlanList } from "@/features/tasks/components/TodayPlanList";
 
 export default async function TodayPage() {
   const supabase = await createClient();
@@ -12,11 +14,22 @@ export default async function TodayPage() {
     redirect("/login");
   }
 
+  // No client-side timezone sync yet (Architecture.md §Timezone) — every
+  // user reads as 'UTC', the column's default, until that sync exists.
+  // getTodayTasks/getTodayInTimezone are already timezone-correct, so
+  // nothing here needs to change once the sync is added.
+  const { data: settings } = await supabase
+    .from("user_settings")
+    .select("timezone")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const todayDate = getTodayInTimezone(settings?.timezone ?? "UTC");
+  const tasks = await getTodayTasks(supabase, todayDate);
+
   return (
-    <main className="flex flex-1 flex-col items-center justify-center p-8">
-      <h1 className="text-2xl font-semibold">Today</h1>
-      <p className="mt-4">{user.email}</p>
-      <LogoutButton />
+    <main className="flex min-h-0 flex-1 flex-col">
+      <TodayPlanList initialTasks={tasks} todayDate={todayDate} />
     </main>
   );
 }

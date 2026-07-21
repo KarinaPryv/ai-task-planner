@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { BrainDumpComposer } from "@/features/brain-dump/components/BrainDumpComposer";
 import { DraftReviewList } from "@/features/brain-dump/components/DraftReviewList";
-import { EmptyState } from "@/features/brain-dump/components/EmptyState";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useDraftReview } from "@/features/brain-dump/hooks/useDraftReview";
 import { useDraftText } from "@/features/brain-dump/hooks/useDraftText";
 import type { BrainDumpResponse } from "@/features/brain-dump/types";
