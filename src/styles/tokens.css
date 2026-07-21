@@ -24,7 +24,7 @@
   --color-brand-accent: #ff6b47;
 
   /* Destructive — fixed, same rationale as brand accent (§5 Button) */
-  --color-destructive: #e5484d;
+  --color-destructive: #c53237;
 
   /* Voice Recording Panel confirm (✓) — dark icon for contrast on the
      opaque coral circle, fixed across all states (Voice Recording Panel

@@ -83,8 +83,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   return apiSuccess(updated, 200);
 }
 
-// DELETE /api/tasks/:id — real delete for draft/confirmed; 403 TASK_READ_ONLY
-// for done (Architecture.md §Tasks — редагування).
+// DELETE /api/tasks/:id — soft delete for draft/confirmed (Undo toast, UX
+// Specification §8.4); 403 TASK_READ_ONLY for done (Architecture.md §Tasks —
+// редагування). Delegates the actual update to the delete_task RPC: a plain
+// client .update() setting deleted_at fails RLS, because PostgREST always
+// runs UPDATE ... RETURNING * internally, and RETURNING re-checks the
+// SELECT policy against the *new* row — which no longer satisfies
+// tasks_select_own's "deleted_at is null" once we've just set it.
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
   const {
@@ -117,7 +122,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     return apiError("TASK_READ_ONLY", "Cannot delete a completed task.", 403);
   }
 
-  const { error: deleteError } = await supabase.from("tasks").delete().eq("id", taskId);
+  const { error: deleteError } = await supabase.rpc("delete_task", { p_task_id: taskId });
 
   if (deleteError) {
     return apiError("INTERNAL_ERROR", "Failed to delete task.", 500);

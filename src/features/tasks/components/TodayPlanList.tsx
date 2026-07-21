@@ -3,9 +3,12 @@
 import { useState, type PointerEvent as ReactPointerEvent } from "react";
 import { AnimatePresence, Reorder, useDragControls } from "framer-motion";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Toast } from "@/components/ui/Toast";
 import { useCompleteTask } from "@/features/tasks/hooks/useCompleteTask";
+import { useDeleteTask } from "@/features/tasks/hooks/useDeleteTask";
 import { useReopenTask } from "@/features/tasks/hooks/useReopenTask";
 import { useReorderTasks } from "@/features/tasks/hooks/useReorderTasks";
+import { useRestoreTask } from "@/features/tasks/hooks/useRestoreTask";
 import type { Task } from "@/features/tasks/types";
 import { TaskRow } from "./TaskRow";
 import { TaskDetailModal } from "./TaskDetailModal";
@@ -28,8 +31,14 @@ export function TodayPlanList({ initialTasks, todayDate }: TodayPlanListProps) {
   const completeTask = useCompleteTask();
   const reopenTask = useReopenTask();
   const reorderTasks = useReorderTasks();
+  const deleteTask = useDeleteTask();
+  const restoreTask = useRestoreTask();
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const selectedTask = tasks.find((task) => task.id === selectedTaskId) ?? null;
+  // Only one undo toast at a time — deleting a second task while the first
+  // is still undoable simply drops the first one's Undo option (its delete
+  // already committed server-side, so nothing is left inconsistent).
+  const [pendingUndo, setPendingUndo] = useState<Task | null>(null);
 
   const activeTasks = tasks.filter((task) => task.status === "confirmed").sort(byLowestSortOrderFirst);
   const doneTasks = tasks.filter((task) => task.status === "done").sort(byLowestSortOrderFirst);
@@ -71,10 +80,45 @@ export function TodayPlanList({ initialTasks, todayDate }: TodayPlanListProps) {
     setTasks((prev) => prev.map((task) => (task.id === selectedTaskId ? { ...task, ...patch } : task)));
   }
 
-  function handleTaskDeleted() {
+  // Optimistic: the task disappears and the modal closes immediately, and
+  // the DELETE request (soft delete server-side) fires right away rather
+  // than waiting for the toast to expire — so the deletion is already
+  // correct even if the user closes the tab before the Undo window ends.
+  function handleTaskDelete() {
     if (!selectedTaskId) return;
-    setTasks((prev) => prev.filter((task) => task.id !== selectedTaskId));
+    const task = tasks.find((t) => t.id === selectedTaskId);
+    if (!task) return;
+
+    setTasks((prev) => prev.filter((t) => t.id !== task.id));
     setSelectedTaskId(null);
+    setPendingUndo(task);
+
+    deleteTask.mutate(task.id, {
+      onError: () => {
+        setTasks((prev) => [...prev, task]);
+        setPendingUndo((current) => (current?.id === task.id ? null : current));
+      },
+    });
+  }
+
+  function handleUndoDelete() {
+    if (!pendingUndo) return;
+    const task = pendingUndo;
+    setPendingUndo(null);
+    setTasks((prev) => [...prev, task]);
+
+    restoreTask.mutate(task.id, {
+      onSuccess: (restored) => {
+        setTasks((prev) => prev.map((t) => (t.id === restored.id ? restored : t)));
+      },
+      onError: () => {
+        setTasks((prev) => prev.filter((t) => t.id !== task.id));
+      },
+    });
+  }
+
+  function handleToastDismiss() {
+    setPendingUndo(null);
   }
 
   if (tasks.length === 0) {
@@ -130,7 +174,19 @@ export function TodayPlanList({ initialTasks, todayDate }: TodayPlanListProps) {
             onClose={() => setSelectedTaskId(null)}
             onToggle={() => handleToggle(selectedTask)}
             onUpdated={handleTaskUpdated}
-            onDeleted={handleTaskDeleted}
+            onDelete={handleTaskDelete}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {pendingUndo && (
+          <Toast
+            key="delete-undo"
+            message="Задачу видалено"
+            actionLabel="Скасувати"
+            onAction={handleUndoDelete}
+            onDismiss={handleToastDismiss}
           />
         )}
       </AnimatePresence>

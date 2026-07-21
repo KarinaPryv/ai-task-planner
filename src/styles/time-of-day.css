@@ -38,10 +38,10 @@
 }
 
 [data-time-theme="evening"] {
-  --atmosphere-1: #c58b78;
-  --atmosphere-2: color-mix(in srgb, #c58b78 50%, #a0637f 50%);
-  --atmosphere-3: #a0637f;
-  --atmosphere-4: #6b4972;
+  --atmosphere-1: #dcae9f;
+  --atmosphere-2: #c49da0;
+  --atmosphere-3: #a87f92;
+  --atmosphere-4: #18193b;
 }
 
 [data-time-theme="night"] {
@@ -90,7 +90,12 @@
 
 [data-surface="light"] {
   --surface-text: #2a2438; /* confirmed via Figma node 8:103 ("Steel Gray") */
-  --surface-text-muted: rgba(42, 36, 56, 0.6); /* confirmed via Figma node 8:113 */
+  --surface-text-muted: rgba(
+    42,
+    36,
+    56,
+    0.6
+  ); /* confirmed via Figma node 8:113 */
   --surface-ghost-text: #2a2438; /* §5 Button Ghost: "темно-фіолетовий" */
 
   --surface-card-bg: rgba(255, 255, 255, 0.4);
@@ -106,7 +111,12 @@
 
   --surface-drawer-bg: rgba(255, 255, 255, 0.88);
   --surface-drawer-border: rgba(0, 0, 0, 0.06);
-  --surface-divider-bg: rgba(0, 0, 0, 0.08); /* Drawer footer divider — slightly stronger than drawer-border */
+  --surface-divider-bg: rgba(
+    0,
+    0,
+    0,
+    0.08
+  ); /* Drawer footer divider — slightly stronger than drawer-border */
 
   --surface-modal-bg: rgba(255, 255, 255, 0.88);
   --surface-modal-border: rgba(0, 0, 0, 0.06);

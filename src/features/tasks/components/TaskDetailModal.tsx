@@ -4,7 +4,6 @@ import { useEffect, useState, type FocusEvent, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { Calendar, Check, Clock, Timer, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
-import { useDeleteTask } from "@/features/tasks/hooks/useDeleteTask";
 import { useUpdateTask } from "@/features/tasks/hooks/useUpdateTask";
 import type { Task } from "@/features/tasks/types";
 import { formatDateGroupLabel, formatDuration } from "@/features/brain-dump/lib/format-date";
@@ -18,7 +17,7 @@ interface TaskDetailModalProps {
   onClose: () => void;
   onToggle: () => void;
   onUpdated: (patch: Partial<Task>) => void;
-  onDeleted: () => void;
+  onDelete: () => void;
 }
 
 // UX Specification §2.4/§1.5, mockup "Task Detail — модалка". Mobile:
@@ -28,9 +27,8 @@ interface TaskDetailModalProps {
 // bg-surface-modal/border-surface-modal-border/shadow-glow tokens Dropdown
 // already uses (UI Specification "Modal"). One JSX tree for the fields —
 // only the outer chrome differs by breakpoint, via lg: overrides.
-export function TaskDetailModal({ task, onClose, onToggle, onUpdated, onDeleted }: TaskDetailModalProps) {
+export function TaskDetailModal({ task, onClose, onToggle, onUpdated, onDelete }: TaskDetailModalProps) {
   const updateMutation = useUpdateTask();
-  const deleteMutation = useDeleteTask();
 
   const isDone = task.status === "done";
 
@@ -156,12 +154,6 @@ export function TaskDetailModal({ task, onClose, onToggle, onUpdated, onDeleted 
     );
   }
 
-  // Immediate delete — no confirmation dialog, no undo toast in this
-  // increment (design spec's explicit MVP scope decision).
-  function handleDelete() {
-    deleteMutation.mutate(task.id, { onSuccess: onDeleted });
-  }
-
   return (
     <motion.div
       role="dialog"
@@ -196,7 +188,7 @@ export function TaskDetailModal({ task, onClose, onToggle, onUpdated, onDeleted 
           {!isDone && (
             <button
               type="button"
-              onClick={handleDelete}
+              onClick={onDelete}
               aria-label="Видалити задачу"
               title="Видалити"
               className="text-surface-text-muted hover:text-destructive flex h-8 w-8 items-center justify-center rounded-full opacity-60 hover:opacity-100"
@@ -215,7 +207,7 @@ export function TaskDetailModal({ task, onClose, onToggle, onUpdated, onDeleted 
             {!isDone && (
               <button
                 type="button"
-                onClick={handleDelete}
+                onClick={onDelete}
                 aria-label="Видалити задачу"
                 title="Видалити"
                 className="text-surface-text-muted hover:text-destructive flex h-8 w-8 items-center justify-center rounded-full opacity-60 hover:opacity-100"
