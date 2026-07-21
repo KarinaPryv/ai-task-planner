@@ -26,6 +26,11 @@
   /* Destructive — fixed, same rationale as brand accent (§5 Button) */
   --color-destructive: #e5484d;
 
+  /* Voice Recording Panel confirm (✓) — dark icon for contrast on the
+     opaque coral circle, fixed across all states (Voice Recording Panel
+     mockup, same "непрозорий елемент" exception as brand accent). */
+  --color-voice-confirm-icon: #341005;
+
   /* Regular Input focus ring — brand-accent based, not surface-dependent
      (§5 Input) */
   --shadow-focus-ring: 0 0 0 3px rgba(255, 107, 71, 0.35);

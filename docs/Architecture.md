@@ -183,6 +183,21 @@ Error:   { error: { code: string, message: string, details?: unknown } }
 3. Виклик RPC **`create_brain_dump_with_tasks(raw_text, tasks, idempotency_key, endpoint)`** — в одній транзакції: створює `brain_dump_entries`, створює всі `tasks` (`status=draft`), **обчислює warnings**, і переводить відповідний запис `idempotency_keys` у `completed` зі збереженням повного response body (включно з warnings). Це закриває вікно між створенням задач і завершенням idempotency-запису — після commit не може залишитись ключ у `processing`, і не може існувати `completed`-запис без warnings у збереженій відповіді.
 4. Відповідь: `201 { data: { brainDumpEntry, tasks[], warnings: [...] } }`
 
+### Brain Dump — транскрипція диктування
+
+**`POST /api/brain-dump/transcribe`**
+
+- Body: аудіо-файл (`multipart/form-data`), MIME-тип відповідає фактичному `MediaRecorder.mimeType` клієнта (`audio/webm` — Chrome/Firefox, `audio/mp4` — Safari).
+- Не створює жодних записів у БД і не потребує `Idempotency-Key` — безпечний для повторного виклику.
+
+Логіка:
+
+1. Валідація файлу (Zod: розмір, дозволений MIME-тип зі списку, який приймає Gemini — `audio/webm`, `audio/mp4`, `audio/aac`, `audio/wav`, `audio/mp3`, `audio/opus`, `audio/flac`).
+2. Виклик Gemini з аудіо як `inlineData` — той самий клієнт `lib/ai/gemini.ts`, той самий timeout/retry-патерн, що й для генерації задач.
+3. Відповідь: `200 { data: { text: string } }`. Якщо мовлення не розпізнано (тиша) — `text: ""`, це не помилка.
+
+Мапінг помилок — ті самі коди, що й для `POST /api/brain-dump` (`400 VALIDATION_ERROR`, `429 AI_RATE_LIMITED`, `502 AI_PROVIDER_ERROR`, `503 AI_UNAVAILABLE`); нових кодів не вводиться.
+
 ### Tasks — редагування
 
 **`PATCH /api/tasks/:id`** — `{ title?, description?, priority?, duration_minutes? }`, скидає відповідний `*_is_suggestion` на `false`, `403 TASK_READ_ONLY` якщо `done`.
@@ -274,6 +289,7 @@ ai-task-planner/
 │   └── api/
 │       ├── brain-dump/
 │       │   ├── route.ts
+│       │   ├── transcribe/route.ts
 │       │   └── [id]/confirm-remaining/route.ts
 │       └── tasks/
 │           ├── [id]/route.ts
@@ -296,10 +312,10 @@ ai-task-planner/
 │   │   ├── schema.ts               # Zod-схеми для tasks
 │   │   └── types.ts
 │   ├── brain-dump/
-│   │   ├── components/             # BrainDumpInput, ReviewCardList
-│   │   ├── hooks/
+│   │   ├── components/             # BrainDumpInput, ReviewCardList, VoiceRecordingPanel
+│   │   ├── hooks/                  # ...useVoiceRecording (MediaRecorder + transcribe)
 │   │   ├── api/
-│   │   │   └── mutations.ts        # POST /api/brain-dump, confirm-remaining
+│   │   │   └── mutations.ts        # POST /api/brain-dump, confirm-remaining, transcribe
 │   │   ├── schema.ts               # Zod-схеми для raw_text, structured output Gemini
 │   │   └── types.ts
 │   ├── calendar/
@@ -445,6 +461,17 @@ Zod-схема є джерелом runtime-валідації (завжди). **
     - Перевантаження дня: сума `duration_minutes` (підтверджені + нові draft) по кожній унікальній `scheduled_date` > 480 хв.
     - Конфлікт часу: окремий warning для кожної пари задач з однаковою `scheduled_date`, де обидві мають `scheduled_time`, і їхні інтервали `[scheduled_time, scheduled_time + duration_minutes)` перетинаються.
 3. Відповідь `201`: `{ data: { brainDumpEntry, tasks[], warnings: [...] } }`.
+
+### Voice Input — транскрипція диктування
+
+Brain Dump підтримує голосове введення (PRD 2, 3.2) через єдиний, кросбраузерний механізм — без per-браузер fallback-логіки:
+
+1. Клієнт записує аудіо через `MediaRecorder` (підтримується в Chrome, Firefox, Safari, включно з iOS Safari та встановленим PWA). `SpeechRecognition`/Web Speech API свідомо не використовується — недокументовано й мовчазно не працює у встановленому standalone iOS PWA, що є основною цільовою платформою продукту (PRD 11, mobile-first PWA).
+2. Паралельно `AnalyserNode` (Web Audio API) дає дані реального рівня гучності для waveform-індикатора під час запису (UI Specification, Voice Recording Panel) — не декоративна анімація.
+3. Розпізнавання не відбувається в реальному часі (UX Specification §4.1): аудіо-файл цілком надсилається на сервер лише після завершення запису.
+4. Сервер (`POST /api/brain-dump/transcribe`, див. API Contract) викликає Gemini з аудіо як `inlineData` — той самий `@google/genai`-клієнт і той самий timeout/retry-патерн, що й для генерації задач (`lib/ai/gemini.ts`).
+5. Підтримувані Gemini audio MIME-типи покривають обидва браузерні дефолти без перекодування на сервері: `audio/webm` (Chrome/Firefox, Opus) і `audio/mp4` (Safari, AAC) — фактичний `mimeType` визначається клієнтом через `MediaRecorder.isTypeSupported()` і передається як є.
+6. Розпізнаний текст повертається одноразово (`{ data: { text } }`) і дописується клієнтом до вже введеного тексту в Brain Dump Input — не замінює його.
 
 ## Authentication
 

@@ -28,3 +28,38 @@ export const idempotencyKeySchema = z
   .string({ error: "Idempotency-Key header is required." })
   .min(1, "Idempotency-Key header must not be empty.")
   .max(255, "Idempotency-Key header must be at most 255 characters.");
+
+// Architecture.md §Voice Input — MIME types Gemini accepts for audio
+// input. The client only ever produces audio/webm or audio/mp4 (the two
+// MediaRecorder defaults), the rest are accepted server-side for
+// completeness per the documented list.
+export const AUDIO_MIME_TYPES = [
+  "audio/webm",
+  "audio/mp4",
+  "audio/aac",
+  "audio/wav",
+  "audio/mp3",
+  "audio/opus",
+  "audio/flac",
+] as const;
+
+// 10MB comfortably covers the ~90s soft recording limit (UX Specification
+// §4.3) at any of the above codecs' typical bitrates — a safety cap, not
+// a product-facing constraint.
+const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
+
+// `MediaRecorder.mimeType` (and thus `File.type`) commonly includes a
+// codec parameter (e.g. "audio/webm;codecs=opus") — compare against the
+// base type only.
+export function baseMimeType(mimeType: string): string {
+  return mimeType.split(";")[0].trim();
+}
+
+export const audioFileSchema = z
+  .instanceof(File, { error: "Audio file is required." })
+  .refine((file) => file.size > 0, "Audio file must not be empty.")
+  .refine((file) => file.size <= MAX_AUDIO_BYTES, "Audio file is too large.")
+  .refine(
+    (file) => (AUDIO_MIME_TYPES as readonly string[]).includes(baseMimeType(file.type)),
+    "Unsupported audio MIME type.",
+  );

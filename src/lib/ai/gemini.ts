@@ -1,5 +1,5 @@
 import { ApiError, GoogleGenAI, Type } from "@google/genai";
-import { systemPromptV1 } from "./prompts";
+import { systemPromptV1, transcriptionPromptV1 } from "./prompts";
 
 // Fixed model version for predictable behavior and low-latency
 // structured extraction.
@@ -147,6 +147,53 @@ export async function generateTasksFromText(
     // Retry once, only when Gemini never returned a response at all
     // (timeout/network) — never for rate limits or provider errors
     // (Architecture.md §Виклик Gemini).
+    if (!(classified instanceof GeminiUnavailableError)) {
+      throw classified;
+    }
+
+    try {
+      return await callOnce();
+    } catch (retryError) {
+      throw toGeminiError(retryError);
+    }
+  }
+}
+
+// Response is plain transcribed text, not structured JSON — no
+// responseSchema/responseMimeType, unlike generateTasksFromText. An empty
+// string is a valid, non-error result (silence — Architecture.md §Voice
+// Input).
+export async function transcribeAudio(
+  audioBase64: string,
+  mimeType: string,
+): Promise<string> {
+  const { apiKey } = getGeminiEnv();
+  const ai = new GoogleGenAI({ apiKey });
+
+  const callOnce = async (): Promise<string> => {
+    const response = await withTimeout(
+      ai.models.generateContent({
+        model: MODEL,
+        contents: [{ inlineData: { mimeType, data: audioBase64 } }],
+        config: {
+          systemInstruction: transcriptionPromptV1,
+        },
+      }),
+      TIMEOUT_MS,
+    );
+
+    if (response.text === undefined) {
+      throw new GeminiProviderError("Gemini returned an empty response.");
+    }
+
+    return response.text;
+  };
+
+  try {
+    return await callOnce();
+  } catch (error) {
+    const classified = toGeminiError(error);
+
     if (!(classified instanceof GeminiUnavailableError)) {
       throw classified;
     }
