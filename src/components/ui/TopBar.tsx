@@ -3,6 +3,8 @@
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { NAV_ITEMS } from "./nav-items";
+import { CountBadge } from "./CountBadge";
+import { usePageBadge } from "./PageBadgeContext";
 
 interface TopBarProps {
   isMobileOpen: boolean;
@@ -18,6 +20,10 @@ interface TopBarProps {
 export function TopBar({ isMobileOpen, onToggleMobile }: TopBarProps) {
   const pathname = usePathname();
   const title = NAV_ITEMS.find((item) => item.href === pathname)?.label ?? "AI Task Planner";
+  // Only Drafts gets a topbar badge (UX Specification §2.3) — Today's
+  // Plan's count lives in the Drawer nav item only.
+  const { counts } = usePageBadge();
+  const badgeCount = pathname === "/drafts" ? counts["/drafts"] : undefined;
 
   return (
     <header className="border-surface-drawer-border text-surface-text flex h-14 shrink-0 items-center gap-3 border-b px-4">
@@ -30,7 +36,10 @@ export function TopBar({ isMobileOpen, onToggleMobile }: TopBarProps) {
       >
         {isMobileOpen ? <X size={22} /> : <Menu size={22} />}
       </button>
-      <span className="font-body text-m font-semibold">{title}</span>
+      <span className="font-body text-m flex items-center gap-2 font-semibold">
+        {title}
+        {badgeCount !== undefined && badgeCount > 0 && <CountBadge count={badgeCount} />}
+      </span>
     </header>
   );
 }

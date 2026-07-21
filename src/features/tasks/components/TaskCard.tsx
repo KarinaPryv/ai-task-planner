@@ -8,7 +8,7 @@ import { useConfirmTask } from "@/features/tasks/hooks/useConfirmTask";
 import { useDeleteTask } from "@/features/tasks/hooks/useDeleteTask";
 import { useUpdateTask } from "@/features/tasks/hooks/useUpdateTask";
 import type { Task } from "@/features/tasks/types";
-import { formatDateGroupLabel, formatDuration } from "@/features/brain-dump/lib/format-date";
+import { formatCreatedAtLabel, formatDateGroupLabel, formatDuration } from "@/features/brain-dump/lib/format-date";
 import { PriorityPicker } from "./PriorityPicker";
 import { DateFieldPicker } from "./DateFieldPicker";
 import { TimeFieldPicker } from "./TimeFieldPicker";
@@ -17,6 +17,9 @@ import { DurationPicker } from "./DurationPicker";
 interface TaskCardProps {
   task: Task;
   conflictWithTitle?: string;
+  // Drafts (UX Specification §7.3) shows a created_at label that Review
+  // omits — on Review "just created" is already obvious from context.
+  showCreatedAt?: boolean;
   onConfirmed: (taskId: string) => void;
   onDeleted: (taskId: string) => void;
   // Local-only patch — see useDraftReview.updateTask. Used both to apply
@@ -48,6 +51,7 @@ interface TaskCardProps {
 export function TaskCard({
   task,
   conflictWithTitle,
+  showCreatedAt = false,
   onConfirmed,
   onDeleted,
   onUpdated,
@@ -216,6 +220,12 @@ export function TaskCard({
               rows={1}
               className="font-body text-surface-text-muted mt-1 w-full resize-none bg-transparent text-[13px] leading-snug outline-none disabled:opacity-60"
             />
+          )}
+
+          {showCreatedAt && (
+            <p className="text-surface-text-muted mt-1 text-[11px] opacity-60">
+              {formatCreatedAtLabel(task.created_at)}
+            </p>
           )}
 
           <div className="mt-2.5 flex flex-wrap items-center gap-1.5">

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { AnimatePresence, Reorder, useDragControls } from "framer-motion";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Toast } from "@/components/ui/Toast";
+import { usePageBadge } from "@/components/ui/PageBadgeContext";
 import { useCompleteTask } from "@/features/tasks/hooks/useCompleteTask";
 import { useDeleteTask } from "@/features/tasks/hooks/useDeleteTask";
 import { useReopenTask } from "@/features/tasks/hooks/useReopenTask";
@@ -39,9 +40,18 @@ export function TodayPlanList({ initialTasks, todayDate }: TodayPlanListProps) {
   // is still undoable simply drops the first one's Undo option (its delete
   // already committed server-side, so nothing is left inconsistent).
   const [pendingUndo, setPendingUndo] = useState<Task | null>(null);
+  const { setCount } = usePageBadge();
 
   const activeTasks = tasks.filter((task) => task.status === "confirmed").sort(byLowestSortOrderFirst);
   const doneTasks = tasks.filter((task) => task.status === "done").sort(byLowestSortOrderFirst);
+
+  // Drawer nav-item badge — outstanding (not yet done) tasks for today,
+  // not the total, since the badge signals "still to do" rather than
+  // "how many exist".
+  useEffect(() => {
+    setCount("/today", activeTasks.length);
+    return () => setCount("/today", null);
+  }, [activeTasks.length, setCount]);
 
   function handleToggle(task: Task) {
     const previousTasks = tasks;

@@ -40,6 +40,16 @@ function formatDuration(totalMinutes: number): string {
 
 export { formatDuration };
 
+// Draft Card created_at label (UX Specification §7.3) — same relative
+// day + time as the batch divider, lowercased and prefixed since it reads
+// as "Створено сьогодні · 09:14" rather than a standalone heading.
+export function formatCreatedAtLabel(createdAt: string): string {
+  const [dayLabel, time] = formatBatchTimestamp(createdAt).split(" · ");
+  const isRelative = dayLabel === "Сьогодні" || dayLabel === "Завтра" || dayLabel === "Вчора";
+
+  return `Створено ${isRelative ? dayLabel.toLowerCase() : dayLabel} · ${time}`;
+}
+
 // Task meta chip — "14:30 · 45 хв" when a time is set, otherwise just the
 // duration.
 export function formatTaskMeta(task: Task): string {

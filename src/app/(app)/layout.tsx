@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Drawer } from "@/components/ui/Drawer";
 import { TopBar } from "@/components/ui/TopBar";
+import { PageBadgeProvider } from "@/components/ui/PageBadgeContext";
 
 const COLLAPSE_STORAGE_KEY = "drawer-collapsed";
 
@@ -41,17 +42,19 @@ export default function AppLayout({
   }
 
   return (
-    <div className="flex min-h-0 flex-1">
-      <Drawer
-        isMobileOpen={isMobileOpen}
-        onCloseMobile={() => setMobileOpen(false)}
-        isCollapsed={isCollapsed}
-        onToggleCollapsed={toggleCollapsed}
-      />
-      <div className="flex min-h-0 flex-1 flex-col">
-        <TopBar isMobileOpen={isMobileOpen} onToggleMobile={() => setMobileOpen((v) => !v)} />
-        {children}
+    <PageBadgeProvider>
+      <div className="flex min-h-0 flex-1">
+        <Drawer
+          isMobileOpen={isMobileOpen}
+          onCloseMobile={() => setMobileOpen(false)}
+          isCollapsed={isCollapsed}
+          onToggleCollapsed={toggleCollapsed}
+        />
+        <div className="flex min-h-0 flex-1 flex-col">
+          <TopBar isMobileOpen={isMobileOpen} onToggleMobile={() => setMobileOpen((v) => !v)} />
+          {children}
+        </div>
       </div>
-    </div>
+    </PageBadgeProvider>
   );
 }

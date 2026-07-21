@@ -4,8 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronLeft, ChevronRight, LogOut, Settings } from "lucide-react";
 import { useLogout } from "@/features/auth/hooks/useLogout";
+import { useNavCounts } from "@/features/tasks/hooks/useNavCounts";
 import { NAV_ITEMS } from "./nav-items";
 import { Wordmark } from "./Wordmark";
+import { CountBadge } from "./CountBadge";
+import { usePageBadge } from "./PageBadgeContext";
 
 interface DrawerProps {
   isMobileOpen: boolean;
@@ -33,6 +36,19 @@ export function Drawer({
 }: DrawerProps) {
   const pathname = usePathname();
   const logout = useLogout();
+  const { counts } = usePageBadge();
+  const { draftCount, todayCount } = useNavCounts();
+
+  // Prefer the exact, optimistic-update-aware count published by a
+  // mounted Drafts/Today's Plan page over the navigation-refetched
+  // fallback (see useNavCounts) — keeps the badge in sync instantly
+  // while the user is on that page (e.g. right after Delete All).
+  function countFor(href: string): number | undefined {
+    if (counts[href] !== undefined) return counts[href];
+    if (href === "/drafts") return draftCount;
+    if (href === "/today") return todayCount;
+    return undefined;
+  }
 
   return (
     <>
@@ -83,6 +99,7 @@ export function Drawer({
           {NAV_ITEMS.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
+            const count = countFor(item.href);
 
             return (
               <Link
@@ -102,11 +119,12 @@ export function Drawer({
                 <Icon size={20} className="shrink-0" />
                 <span
                   className={[
-                    "whitespace-nowrap",
+                    "flex flex-1 items-center justify-between gap-2 whitespace-nowrap",
                     isCollapsed ? "lg:hidden" : "",
                   ].join(" ")}
                 >
                   {item.label}
+                  {count !== undefined && count > 0 && <CountBadge count={count} />}
                 </span>
               </Link>
             );

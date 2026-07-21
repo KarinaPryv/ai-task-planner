@@ -1,58 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useState } from "react";
 import type { Task } from "@/features/tasks/types";
 import type { BrainDumpResponse } from "../types";
 
-function reviewKey(userId: string) {
-  return `brain-dump-review:${userId}`;
-}
-
-// Draft Review is session state, not a database read: warnings
-// (day_overload/time_conflict) only ever exist in a POST /api/brain-dump
-// response, never persisted on the tasks table (UX Specification §6.5 —
-// "computed once, never recalculated"). Each submission's response is
-// appended here as a batch; batch dividers on the Review screen are a
-// rendering of this array, not a query across brain_dump_entries.
-// Persisted to localStorage per-user (mirrors useDraftText) so an
-// accidental refresh doesn't lose an unreviewed batch.
+// Draft Review is in-memory only, scoped to the current Brain Dump page
+// visit — deliberately NOT persisted (it used to be, via localStorage,
+// before Drafts existed). A reload or navigating away and back now
+// always starts this empty, so Brain Dump reads as a clean "generate"
+// surface rather than accumulating old batches. Nothing is lost: any
+// draft not yet confirmed/deleted is still sitting in the tasks table
+// with status='draft' and shows up on /drafts, which is now the
+// permanent place to review/edit it (UX Specification §7).
 export function useDraftReview() {
-  const [userId, setUserId] = useState<string | null>(null);
   const [batches, setBatches] = useState<BrainDumpResponse[]>([]);
-
-  useEffect(() => {
-    const supabase = createClient();
-
-    supabase.auth.getUser().then(({ data }) => {
-      setUserId(data.user?.id ?? null);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!userId) return;
-
-    const stored = window.localStorage.getItem(reviewKey(userId));
-
-    if (stored) {
-      try {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- reads an external system (localStorage) on mount
-        setBatches(JSON.parse(stored));
-      } catch {
-        window.localStorage.removeItem(reviewKey(userId));
-      }
-    }
-  }, [userId]);
-
-  useEffect(() => {
-    if (!userId) return;
-
-    if (batches.length > 0) {
-      window.localStorage.setItem(reviewKey(userId), JSON.stringify(batches));
-    } else {
-      window.localStorage.removeItem(reviewKey(userId));
-    }
-  }, [userId, batches]);
 
   function addBatch(response: BrainDumpResponse) {
     setBatches((prev) => [...prev, response]);

@@ -108,6 +108,7 @@
 
   --surface-secondary-btn-bg: rgba(0, 0, 0, 0.06);
   --surface-secondary-btn-border: rgba(0, 0, 0, 0.15);
+  --surface-secondary-btn-hover-bg: rgba(0, 0, 0, 0.12);
 
   --surface-drawer-bg: rgba(255, 255, 255, 0.88);
   --surface-drawer-border: rgba(0, 0, 0, 0.06);
@@ -151,6 +152,7 @@
 
   --surface-secondary-btn-bg: rgba(255, 255, 255, 0.1);
   --surface-secondary-btn-border: rgba(255, 255, 255, 0.22);
+  --surface-secondary-btn-hover-bg: rgba(255, 255, 255, 0.18);
 
   --surface-drawer-bg: rgba(30, 20, 55, 0.9);
   --surface-drawer-border: rgba(255, 255, 255, 0.1);
@@ -194,6 +196,7 @@
 
   --color-surface-secondary-btn: var(--surface-secondary-btn-bg);
   --color-surface-secondary-btn-border: var(--surface-secondary-btn-border);
+  --color-surface-secondary-btn-hover: var(--surface-secondary-btn-hover-bg);
 
   --color-surface-drawer: var(--surface-drawer-bg);
   --color-surface-drawer-border: var(--surface-drawer-border);

@@ -22,3 +22,21 @@ export async function getTodayTasks(
 
   return data ?? [];
 }
+
+// Drafts read (UX Specification §7.2) — every draft task, newest
+// created_at first, no scheduled_date grouping (unlike Today's Plan).
+export async function getDraftTasks(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+): Promise<Task[]> {
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("*")
+    .eq("status", "draft")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new Error(`Failed to load draft tasks: ${error.message}`);
+  }
+
+  return data ?? [];
+}
