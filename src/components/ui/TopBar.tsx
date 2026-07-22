@@ -19,7 +19,7 @@ interface TopBarProps {
 // the title stays visible on both.
 export function TopBar({ isMobileOpen, onToggleMobile }: TopBarProps) {
   const pathname = usePathname();
-  const title = NAV_ITEMS.find((item) => item.href === pathname)?.label ?? "AI Task Planner";
+  const title = NAV_ITEMS.find((item) => item.href === pathname)?.label ?? "Yasno";
   // Only Drafts gets a topbar badge (UX Specification §2.3) — Today's
   // Plan's count lives in the Drawer nav item only.
   const { counts } = usePageBadge();

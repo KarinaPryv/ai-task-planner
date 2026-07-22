@@ -23,8 +23,8 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "AI Task Planner",
-  description: "AI Task Planner",
+  title: "Yasno",
+  description: "Yasno",
 };
 
 export default function RootLayout({

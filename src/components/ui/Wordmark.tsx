@@ -36,7 +36,7 @@ export function Wordmark({
             collapsed ? "lg:hidden" : "",
           ].join(" ")}
         >
-          AI Task Planner
+          Yasno
         </span>
       </div>
     );
@@ -46,7 +46,7 @@ export function Wordmark({
     <div className="flex items-center gap-[9px] overflow-hidden">
       <Logo size={40} />
       <span className="font-accent text-brand text-surface-text leading-tight font-bold whitespace-nowrap">
-        AI Task Planner
+        Yasno
       </span>
     </div>
   );
