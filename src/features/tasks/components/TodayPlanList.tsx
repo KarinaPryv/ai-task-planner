@@ -13,6 +13,7 @@ import { useRestoreTask } from "@/features/tasks/hooks/useRestoreTask";
 import type { Task } from "@/features/tasks/types";
 import { TaskRow } from "./TaskRow";
 import { TaskDetailModal } from "./TaskDetailModal";
+import { AllDoneCelebration } from "./AllDoneCelebration";
 
 interface TodayPlanListProps {
   initialTasks: Task[];
@@ -139,9 +140,7 @@ export function TodayPlanList({ initialTasks, todayDate }: TodayPlanListProps) {
     <>
       <div className="flex-1 overflow-y-auto px-4 pt-4 lg:mx-auto lg:w-full lg:max-w-[620px] lg:px-0 lg:pt-6">
         {activeTasks.length === 0 ? (
-          <p className="font-body text-surface-text-muted py-3 text-center text-[13px] opacity-60">
-            Усі задачі на сьогодні виконані
-          </p>
+          <AllDoneCelebration />
         ) : (
           <div className="border-surface-card-border bg-surface-card rounded-card border px-3">
             <Reorder.Group as="div" axis="y" values={activeTasks} onReorder={handleReorder}>

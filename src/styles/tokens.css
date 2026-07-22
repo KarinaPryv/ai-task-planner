@@ -51,3 +51,29 @@
     transform: translate(6px, -14px);
   }
 }
+
+/* Today's Plan "all done" celebration (AllDoneCelebration.tsx) — a
+   faster, more noticeable pulse than atmosphere-breathe's ambient 14s
+   cycle, since this marks a specific completed-everything moment rather
+   than being ambient background motion. */
+@keyframes celebration-core-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes celebration-ring-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.12;
+    transform: scale(1.25);
+  }
+}
