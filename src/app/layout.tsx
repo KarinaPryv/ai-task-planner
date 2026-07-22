@@ -1,10 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Comfortaa, Manrope } from "next/font/google";
 import "./globals.css";
 import { AtmosphereBackground } from "@/components/theme/AtmosphereBackground";
 import { TimeOfDayProvider } from "@/components/theme/TimeOfDayProvider";
 import { themeScript } from "@/components/theme/theme-script";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { PwaRegister } from "@/components/providers/PwaRegister";
 
 // UI Specification §2 Типографіка: Comfortaa is the accent typeface
 // (buttons, badges, wordmark, FAB — never card titles/body text);
@@ -24,7 +25,16 @@ const manrope = Manrope({
 
 export const metadata: Metadata = {
   title: "Yasno",
-  description: "Yasno",
+  description: "Yasno перетворює хаос думок на план дня",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Yasno",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#FF6B47",
 };
 
 export default function RootLayout({
@@ -51,6 +61,7 @@ export default function RootLayout({
         <QueryProvider>
           <TimeOfDayProvider>
             <AtmosphereBackground />
+            <PwaRegister />
             {children}
           </TimeOfDayProvider>
         </QueryProvider>
