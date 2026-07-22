@@ -10,11 +10,16 @@ export interface DateGroup {
 export interface GroupedBatch {
   brainDumpEntry: BrainDumpEntry;
   dateGroups: DateGroup[];
-  // taskId -> the title of the other task it conflicts with. Built fresh
-  // from the batch's *current* tasks on every call, so a conflict-note
-  // silently disappears once either side of the pair is confirmed/deleted
-  // — without ever re-running the overlap detection itself.
-  conflictTitleByTaskId: Map<string, string>;
+  // taskId -> titles of every other task it conflicts with (TaskCard
+  // decides the "with «X»" vs "with N tasks" wording from the array
+  // length). Read straight off the warning's conflicts_with — the RPC
+  // already groups by task, one warning per conflicting task, not per
+  // pair (see types.ts) — not looked up in batch.tasks, since a conflict's
+  // other side is often an already-confirmed task that never appears in
+  // this batch's tasks[]. Same persistence rule as OverloadBanner (see its
+  // comment): a note shows as long as the task it's attached to is still
+  // rendered, even after its counterpart is itself confirmed/deleted.
+  conflictTitlesByTaskId: Map<string, string[]>;
 }
 
 export function groupBatch(batch: BrainDumpResponse): GroupedBatch {
@@ -37,20 +42,16 @@ export function groupBatch(batch: BrainDumpResponse): GroupedBatch {
       ),
     }));
 
-  const conflictTitleByTaskId = new Map<string, string>();
+  const conflictTitlesByTaskId = new Map<string, string[]>();
 
   for (const warning of batch.warnings) {
     if (warning.type !== "time_conflict") continue;
 
-    const [id1, id2] = warning.task_ids;
-    const task1 = batch.tasks.find((task) => task.id === id1);
-    const task2 = batch.tasks.find((task) => task.id === id2);
-
-    if (task1 && task2) {
-      conflictTitleByTaskId.set(id1, task2.title);
-      conflictTitleByTaskId.set(id2, task1.title);
-    }
+    conflictTitlesByTaskId.set(
+      warning.task_id,
+      warning.conflicts_with.map((conflict) => conflict.title),
+    );
   }
 
-  return { brainDumpEntry: batch.brainDumpEntry, dateGroups, conflictTitleByTaskId };
+  return { brainDumpEntry: batch.brainDumpEntry, dateGroups, conflictTitlesByTaskId };
 }

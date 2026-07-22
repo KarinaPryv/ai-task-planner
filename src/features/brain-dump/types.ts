@@ -12,10 +12,14 @@ export interface DayOverloadWarning {
   total_minutes: number;
 }
 
+// One entry per task involved in a time conflict (not per pair) — a task
+// overlapping 3+ others still produces a single warning, with every task
+// it overlaps listed in conflicts_with.
 export interface TimeConflictWarning {
   type: "time_conflict";
   scheduled_date: string;
-  task_ids: [string, string];
+  task_id: string;
+  conflicts_with: { id: string; title: string }[];
 }
 
 export type Warning = DayOverloadWarning | TimeConflictWarning;

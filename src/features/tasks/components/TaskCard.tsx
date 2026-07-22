@@ -16,7 +16,10 @@ import { DurationPicker } from "./DurationPicker";
 
 interface TaskCardProps {
   task: Task;
-  conflictWithTitle?: string;
+  // Titles of every other task this one conflicts with (see group-batches
+  // .ts) — one renders as "Конфлікт з «X»", two or more collapse to a
+  // count instead of listing every title.
+  conflictingTitles?: string[];
   // Drafts (UX Specification §7.3) shows a created_at label that Review
   // omits — on Review "just created" is already obvious from context.
   showCreatedAt?: boolean;
@@ -50,7 +53,7 @@ interface TaskCardProps {
 // a single shared-layout transition instead of an instant jump.
 export function TaskCard({
   task,
-  conflictWithTitle,
+  conflictingTitles,
   showCreatedAt = false,
   onConfirmed,
   onDeleted,
@@ -74,7 +77,7 @@ export function TaskCard({
     deleteMutation.mutate(task.id, { onSuccess: () => onDeleted(task.id) });
   }
 
-  function handleTitleBlur(event: FocusEvent<HTMLInputElement>) {
+  function handleTitleBlur(event: FocusEvent<HTMLTextAreaElement>) {
     const trimmed = event.target.value.trim();
 
     if (!trimmed || trimmed === task.title) {
@@ -202,13 +205,22 @@ export function TaskCard({
             <Trash2 size={15} />
           </button>
 
-          <input
-            type="text"
+          <textarea
             value={titleDraft}
             onChange={(event) => setTitleDraft(event.target.value)}
             onBlur={handleTitleBlur}
+            onKeyDown={(event) => {
+              // Title is conceptually one line, just visually wrapped —
+              // Enter commits (like a text input) instead of inserting a
+              // line break.
+              if (event.key === "Enter") {
+                event.preventDefault();
+                event.currentTarget.blur();
+              }
+            }}
             disabled={isBusy}
-            className="font-body text-surface-text w-full bg-transparent pr-1 text-[15px] leading-snug font-semibold outline-none disabled:opacity-60"
+            rows={2}
+            className="font-body text-surface-text line-clamp-2 w-full resize-none bg-transparent pr-1 text-[15px] leading-snug font-semibold outline-none disabled:opacity-60"
           />
 
           {task.description !== null && (
@@ -295,10 +307,12 @@ export function TaskCard({
             />
           </div>
 
-          {conflictWithTitle && (
+          {conflictingTitles && conflictingTitles.length > 0 && (
             <p className="text-destructive mt-2 inline-flex items-center gap-1.5 text-[12px] font-medium">
               <AlertTriangle size={13} />
-              Конфлікт з «{conflictWithTitle}»
+              {conflictingTitles.length === 1
+                ? `Конфлікт з «${conflictingTitles[0]}»`
+                : `Конфліктує з ${conflictingTitles.length} задачами на цей час`}
             </p>
           )}
         </div>

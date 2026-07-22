@@ -13,6 +13,10 @@ import type { BrainDumpResponse } from "../types";
 interface DraftReviewListProps {
   batches: BrainDumpResponse[];
   onTasksConfirmedOrDeleted: (taskIds: string[]) => void;
+  // Confirm-only signal, carrying full tasks (not just ids) — the page
+  // needs each task's scheduled_date to know which confirms count toward
+  // today's live badge total (see BrainDumpPage). Delete never fires this.
+  onTasksConfirmed: (tasks: Task[]) => void;
   onTaskUpdated: (taskId: string, patch: Partial<Task>) => void;
 }
 
@@ -22,6 +26,7 @@ interface DraftReviewListProps {
 export function DraftReviewList({
   batches,
   onTasksConfirmedOrDeleted,
+  onTasksConfirmed,
   onTaskUpdated,
 }: DraftReviewListProps) {
   return (
@@ -40,7 +45,11 @@ export function DraftReviewList({
                 <DateGroupHeader
                   label={formatDateGroupLabel(group.date)}
                   taskIds={group.tasks.map((task) => task.id)}
-                  onConfirmedBatch={onTasksConfirmedOrDeleted}
+                  onConfirmedBatch={(confirmedIds) => {
+                    const confirmedIdSet = new Set(confirmedIds);
+                    onTasksConfirmed(group.tasks.filter((task) => confirmedIdSet.has(task.id)));
+                    onTasksConfirmedOrDeleted(confirmedIds);
+                  }}
                 />
 
                 {group.overloadWarning && (
@@ -53,8 +62,11 @@ export function DraftReviewList({
                       <TaskCard
                         key={task.id}
                         task={task}
-                        conflictWithTitle={grouped.conflictTitleByTaskId.get(task.id)}
-                        onConfirmed={(taskId) => onTasksConfirmedOrDeleted([taskId])}
+                        conflictingTitles={grouped.conflictTitlesByTaskId.get(task.id)}
+                        onConfirmed={(taskId) => {
+                          onTasksConfirmed([task]);
+                          onTasksConfirmedOrDeleted([taskId]);
+                        }}
                         onDeleted={(taskId) => onTasksConfirmedOrDeleted([taskId])}
                         onUpdated={onTaskUpdated}
                       />
