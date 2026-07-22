@@ -70,7 +70,6 @@ export function Drawer({
         className={[
           "bg-surface-drawer border-surface-drawer-border text-surface-text",
           "fixed inset-y-0 left-0 z-40 flex w-[68%] max-w-xs flex-col border-r p-4",
-          "pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]",
           "transition-transform duration-[250ms] ease-in-out motion-reduce:transition-none",
           isMobileOpen ? "translate-x-0" : "-translate-x-full",
           "lg:static lg:translate-x-0 lg:transition-[width]",

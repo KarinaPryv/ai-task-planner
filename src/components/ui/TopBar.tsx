@@ -26,7 +26,7 @@ export function TopBar({ isMobileOpen, onToggleMobile }: TopBarProps) {
   const badgeCount = pathname === "/drafts" ? counts["/drafts"] : undefined;
 
   return (
-    <header className="border-surface-drawer-border text-surface-text flex min-h-14 shrink-0 items-center gap-3 border-b px-4 pt-[env(safe-area-inset-top)]">
+    <header className="border-surface-drawer-border text-surface-text flex h-14 shrink-0 items-center gap-3 border-b px-4">
       <button
         type="button"
         onClick={onToggleMobile}

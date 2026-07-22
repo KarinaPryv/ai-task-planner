@@ -23,11 +23,7 @@ export function AtmosphereBackground() {
   return (
     <div
       aria-hidden="true"
-      // h-dvh/w-dvw instead of inset-0: on iOS standalone PWAs, a fixed
-      // element sized via inset-0 doesn't reliably extend under the
-      // safe areas even with viewport-fit: cover — dvh/dvw are defined
-      // to already include them, which is the documented workaround.
-      className="atmosphere-layer pointer-events-none fixed top-0 left-0 h-dvh w-dvw -z-10"
+      className="atmosphere-layer pointer-events-none fixed inset-0 -z-10"
     />
   );
 }

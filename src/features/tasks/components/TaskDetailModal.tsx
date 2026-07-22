@@ -176,7 +176,7 @@ export function TaskDetailModal({ task, onClose, onToggle, onUpdated, onDelete }
         className="flex flex-1 flex-col overflow-y-auto lg:max-h-[85vh] lg:w-[420px] lg:flex-none lg:rounded-modal lg:border lg:border-surface-modal-border lg:bg-surface-modal lg:shadow-glow"
       >
         {/* Mobile topbar: X, spacer, trash */}
-        <div className="flex shrink-0 items-center justify-between px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-2 lg:hidden">
+        <div className="flex shrink-0 items-center justify-between px-4 pt-4 pb-2 lg:hidden">
           <button
             type="button"
             onClick={onClose}
@@ -226,7 +226,7 @@ export function TaskDetailModal({ task, onClose, onToggle, onUpdated, onDelete }
           </div>
         </div>
 
-        <div className="flex-1 px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+        <div className="flex-1 px-5 pb-6">
           <div className="mb-5 flex items-start gap-3">
             <button
               type="button"

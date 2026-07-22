@@ -21,20 +21,6 @@ export const TimeOfDayContext = createContext<TimeOfDayContextValue | null>(null
 function applyToDocument(theme: TimeOfDay, surface: Surface) {
   document.documentElement.setAttribute("data-time-theme", theme);
   document.documentElement.setAttribute("data-surface", surface);
-
-  // Android/Chrome has no equivalent to iOS's translucent status bar for
-  // installed web apps — it always paints a flat, opaque bar in
-  // theme-color. The closest a flat bar can get to matching the
-  // atmosphere gradient beneath it is tracking that gradient's own
-  // top-most stop, so the seam reads as "part of the atmosphere" instead
-  // of a fixed neutral. Read via getComputedStyle (not duplicated here)
-  // so this can never drift from styles/time-of-day.css.
-  const themeColorMeta = document.querySelector('meta[name="theme-color"]');
-  const topColor = getComputedStyle(document.documentElement).getPropertyValue("--atmosphere-1").trim();
-
-  if (themeColorMeta && topColor) {
-    themeColorMeta.setAttribute("content", topColor);
-  }
 }
 
 // Keeps html[data-time-theme]/[data-surface] in sync while the tab stays

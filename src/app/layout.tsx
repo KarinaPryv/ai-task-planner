@@ -28,18 +28,13 @@ export const metadata: Metadata = {
   description: "Yasno перетворює хаос думок на план дня",
   appleWebApp: {
     capable: true,
-    // "black-translucent" makes the iOS status bar transparent so
-    // AtmosphereBackground shows through behind the clock/battery icons,
-    // instead of "default"'s opaque white bar — requires viewportFit:
-    // "cover" below so the layout viewport actually extends that far.
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "Yasno",
   },
 };
 
 export const viewport: Viewport = {
   themeColor: "#FBF9F6",
-  viewportFit: "cover",
 };
 
 export default function RootLayout({

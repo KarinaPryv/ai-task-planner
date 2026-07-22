@@ -52,7 +52,7 @@ export default async function LandingPage() {
 
 function LandingHeader() {
   return (
-    <header className="sticky top-0 z-20 flex items-center justify-between bg-[rgba(251,249,246,0.72)] px-5 py-5 pt-[max(1.25rem,env(safe-area-inset-top))] backdrop-blur-md lg:px-14 lg:py-6.5">
+    <header className="sticky top-0 z-20 flex items-center justify-between bg-[rgba(251,249,246,0.72)] px-5 py-5 backdrop-blur-md lg:px-14 lg:py-6.5">
       <div className="flex items-center gap-[9px]">
         <Logo size={32} />
         <span className="font-accent text-brand leading-tight font-bold text-[#211C2E]">
