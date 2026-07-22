@@ -30,10 +30,23 @@ function applyToDocument(theme: TimeOfDay, surface: Surface) {
   // of a fixed neutral. Read via getComputedStyle (not duplicated here)
   // so this can never drift from styles/time-of-day.css.
   const themeColorMeta = document.querySelector('meta[name="theme-color"]');
-  const topColor = getComputedStyle(document.documentElement).getPropertyValue("--atmosphere-1").trim();
+  const computed = getComputedStyle(document.documentElement);
+  const topColor = computed.getPropertyValue("--atmosphere-1").trim();
+  const bottomColor = computed.getPropertyValue("--atmosphere-4").trim();
 
   if (themeColorMeta && topColor) {
     themeColorMeta.setAttribute("content", topColor);
+  }
+
+  // iOS standalone PWAs paint the bottom safe-area strip (home indicator
+  // area) from <body>'s own background-color, not from AtmosphereBackground
+  // (a z-indexed fixed child) — even with viewport-fit: cover, that layer
+  // doesn't reach it. body has no background of its own otherwise, so it
+  // falls back to the browser default (white) there. Tracking the
+  // gradient's bottom-most stop keeps that strip part of the atmosphere
+  // instead of a stray white bar.
+  if (bottomColor) {
+    document.body.style.backgroundColor = bottomColor;
   }
 }
 

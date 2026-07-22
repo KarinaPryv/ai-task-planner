@@ -53,7 +53,7 @@ export default function AppLayout({
           isCollapsed={isCollapsed}
           onToggleCollapsed={toggleCollapsed}
         />
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col pb-[env(safe-area-inset-bottom)]">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col pb-[min(1.5rem,env(safe-area-inset-bottom))]">
           <TopBar isMobileOpen={isMobileOpen} onToggleMobile={() => setMobileOpen((v) => !v)} />
           {children}
         </div>
