@@ -55,7 +55,7 @@ export function BrainDumpComposer({ value, onChange, onSubmit, loading }: BrainD
   }, [value]);
 
   return (
-    <div className="shrink-0 px-4 pt-3.5 pb-[max(1.25rem,env(safe-area-inset-bottom))] lg:px-10 lg:pt-4.5 lg:pb-6.5">
+    <div className="shrink-0 px-4 pt-3.5 pb-5 lg:px-10 lg:pt-4.5 lg:pb-6.5">
       <div className="lg:mx-auto lg:max-w-[620px]">
         {isRecording ? (
           <VoiceRecordingPanel
