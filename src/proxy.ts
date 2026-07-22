@@ -1,7 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/update-session";
 
-const PROTECTED_PATHS = ["/", "/today", "/upcoming", "/drafts", "/brain-dump"];
+// "/" is deliberately absent — it's the public landing page for signed-out
+// visitors; signed-in visitors get redirected onward by the page itself
+// (to /today or /brain-dump, depending on whether today has any tasks).
+const PROTECTED_PATHS = ["/today", "/upcoming", "/drafts", "/brain-dump"];
 const AUTH_PATHS = ["/login", "/signup"];
 
 export async function proxy(request: NextRequest) {

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Wordmark } from "@/components/ui/Wordmark";
 import { GoogleButton } from "@/features/auth/components/GoogleButton";
@@ -24,9 +25,9 @@ export default function LoginPage() {
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center px-6">
-      <div className="mb-3.5">
+      <Link href="/" className="mb-3.5">
         <Wordmark />
-      </div>
+      </Link>
       <p className="text-body-sm text-surface-text-muted font-body mb-9">
         Плануй розумніше з AI
       </p>
