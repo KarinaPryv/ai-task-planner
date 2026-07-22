@@ -43,8 +43,16 @@ export function TodayPlanList({ initialTasks, todayDate }: TodayPlanListProps) {
   const [pendingUndo, setPendingUndo] = useState<Task | null>(null);
   const { setCount } = usePageBadge();
 
-  const activeTasks = tasks.filter((task) => task.status === "confirmed").sort(byLowestSortOrderFirst);
-  const doneTasks = tasks.filter((task) => task.status === "done").sort(byLowestSortOrderFirst);
+  // scheduled_date is checked here too, not just status — editing a
+  // task's date away from today (TaskDetailModal) only patches the field
+  // in `tasks` (see handleTaskUpdated below), it doesn't remove the task,
+  // so this is what actually drops it out of Today's Plan. The task stays
+  // in `tasks` itself (harmless, unrendered) so an optimistic date-change
+  // that fails server-side can still revert correctly — see
+  // TaskDetailModal.handleDateChange.
+  const todayTasks = tasks.filter((task) => task.scheduled_date === todayDate);
+  const activeTasks = todayTasks.filter((task) => task.status === "confirmed").sort(byLowestSortOrderFirst);
+  const doneTasks = todayTasks.filter((task) => task.status === "done").sort(byLowestSortOrderFirst);
 
   // Drawer nav-item badge — outstanding (not yet done) tasks for today,
   // not the total, since the badge signals "still to do" rather than
@@ -132,7 +140,12 @@ export function TodayPlanList({ initialTasks, todayDate }: TodayPlanListProps) {
     setPendingUndo(null);
   }
 
-  if (tasks.length === 0) {
+  // selectedTaskId is checked too: editing the last remaining today-task's
+  // date away (in the modal below) makes todayTasks empty on this same
+  // render — without this guard the early return would yank the open
+  // modal out from under the user instead of letting them close it
+  // normally.
+  if (todayTasks.length === 0 && !selectedTaskId) {
     return <EmptyState message="Тут з'явиться твій план на сьогодні — почни з Brain Dump" />;
   }
 

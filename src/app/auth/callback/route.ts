@@ -16,5 +16,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);
   }
 
-  return NextResponse.redirect(`${origin}/today`);
+  // "/" already has the "today has tasks? /today : /brain-dump" branch
+  // for signed-in visitors (src/app/page.tsx) — redirect there instead of
+  // duplicating that query here.
+  return NextResponse.redirect(origin);
 }
